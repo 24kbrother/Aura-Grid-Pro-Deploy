@@ -14,16 +14,14 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --save 60 1 --loglevel warning
-    # http://your-server-ip:8125
     networks:
-      - shadow-internal
+      - aura-pro-internal
 
   # ─── Shadow Home: Unified API + Frontend ─────────────────
   aura-grid:
     image: ghcr.io/24kbrother/aura-grid-pro:v1.7.9-PRO
     container_name: aura-grid-pro
     restart: unless-stopped
-    # 移除了 env_file: .env 依赖，所有核心参数已在下方 environment 中定义
     environment:
       NODE_ENV: production
       PORT: 8500
@@ -38,15 +36,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock # Required for Stealth Upgrade (Staff only)
 
     ports:
-      - "8500:8500"
+      - "8125:8500"
     networks:
-      - shadow-internal
+      - aura-pro-internal
     depends_on:
       - redis
 
 # ─── Networks ─────────────────────────────────────────────
 networks:
-  shadow-internal:
+  aura-pro-internal:
     driver: bridge
 
 # ─── Volumes ──────────────────────────────────────────────
