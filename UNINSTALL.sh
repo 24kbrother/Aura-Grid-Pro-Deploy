@@ -119,11 +119,41 @@ else
     echo "✨ 未检测到任何已挂载的专属或遗留数据卷。"
 fi
 
+# 5. 宿主机物理文件清理 (完全恢复出厂设置)
 echo ""
-echo -e "${GREEN}------------------------------------------------------${NC}"
-echo -e "✅ Aura Grid (Shadow Home) 已从 Docker 环境中卸载。"
-echo ""
-echo -e "${YELLOW}⚠️  温馨提示：${NC}"
-echo -e "   1. 您的持久化配置（./data 和 ./floorplans 文件夹）仍保留在宿主机。"
-echo -e "   2. 如需彻底删除所有数据（恢复出厂设置），请手动删除上述文件夹。"
-echo -e "${GREEN}------------------------------------------------------${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo -e "📂  检测到宿主机本地持久化映射目录 (Bind Mounts)${NC}"
+echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+LOCAL_DIRS=("data" "floorplans" "icons")
+FOUND_DIRS=()
+
+for dir in "${LOCAL_DIRS[@]}"; do
+    if [ -d "$dir" ]; then
+        FOUND_DIRS+=("$dir")
+    fi
+done
+
+if [ ${#FOUND_DIRS[@]} -gt 0 ]; then
+    echo -e "当前目录下发现持久化文件夹: ${GREEN}${FOUND_DIRS[*]}${NC}"
+    echo -e "------------------------------------------------------"
+    echo -e "💡 ${BOLD}保留 (默认)${NC}: 保留激活授权、地板图、自定义图标和所有布局配置。"
+    echo -e "🔥 ${RED}删除 (Factory Reset)${NC}: 彻底清空所有本地数据，下次安装需从零开始（需重新激活）。"
+    echo -e "------------------------------------------------------"
+    
+    read -p "❓ 是否要彻底删除这些宿主机目录？[y/N] (默认保留): " delete_local
+    if [[ "$delete_local" =~ ^[Yy]$ ]]; then
+        for dir in "${FOUND_DIRS[@]}"; do
+            echo -e "♻️  正在移除目录: $dir"
+            rm -rf "$dir"
+        done
+        echo -e "${GREEN}✅ 宿主机本地持久化文件已全部清理成真空状态。${NC}"
+    else
+        echo -e "${GREEN}✅ 数据已保护：您的本地配置、底图和授权令牌已安全保留。${NC}"
+    fi
+else
+    echo "✨ 未发现任何相关的宿主机持久化文件夹。"
+fi
+
+echo -e "\n${BOLD}${GREEN}===============================================${NC}"
+echo -e "${BOLD}${GREEN}         Aura Grid Pro 卸载/清理流程结束          ${NC}"
+echo -e "${BOLD}${GREEN}===============================================${NC}"
