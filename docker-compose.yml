@@ -1,0 +1,57 @@
+# ══════════════════════════════════════════════════════════
+#  Shadow Smart Home Platform — Production Compose
+#  Run with: docker-compose up -d
+#  All config via .env file (copy from .env.example)
+# ══════════════════════════════════════════════════════════
+
+services:
+
+  # ─── Redis: Real-time state cache ─────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: aura-redis-pro
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    # http://your-server-ip:8125
+    networks:
+      - shadow-internal
+
+  # ─── Shadow Home: Unified API + Frontend ─────────────────
+  aura-grid:
+    image: ghcr.io/24kbrother/aura-grid-pro:v1.7.9-PRO
+    container_name: aura-grid-pro
+    restart: unless-stopped
+    # 移除了 env_file: .env 依赖，所有核心参数已在下方 environment 中定义
+    environment:
+      NODE_ENV: production
+      PORT: 8500
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: file:/app/prisma/data/prod.db
+      FLOORPLANS_DIR: /app/floorplans
+    volumes:
+      - db_data:/app/prisma/data
+      - ./floorplans:/app/floorplans
+      - ./icons:/app/icons
+      - ./data:/app/data
+      - /var/run/docker.sock:/var/run/docker.sock # Required for Stealth Upgrade (Staff only)
+
+    ports:
+      - "8500:8500"
+    networks:
+      - shadow-internal
+    depends_on:
+      - redis
+
+# ─── Networks ─────────────────────────────────────────────
+networks:
+  shadow-internal:
+    driver: bridge
+
+# ─── Volumes ──────────────────────────────────────────────
+volumes:
+  redis_data:
+    name: aura-pro-redis-data
+  db_data:
+    name: aura-pro-db-data

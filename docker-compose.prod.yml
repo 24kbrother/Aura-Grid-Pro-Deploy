@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────
+#  Shadow Smart Home — Production Deployment (Golden Image)
+#  Usage: docker compose -f docker-compose.prod.yml up -d
+# ─────────────────────────────────────────────────────────────
+
+services:
+  aura-grid:
+    image: aura-grid:v1.6.2-pro
+    pull_policy: missing
+    container_name: aura-grid
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 8500
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: file:/app/prisma/data/prod.db
+      FLOORPLANS_DIR: /app/floorplans
+      # Add HA_URL / HA_TOKEN / ACCESS_PASSWORD to .env
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_PORT:-8125}:8500"
+    volumes:
+      - ./data:/app/prisma/data
+      - ./floorplans:/app/floorplans
+      - ./icons:/app/icons
+    depends_on:
+      - redis
+    networks:
+      - shadow-internal
+
+  redis:
+    image: redis:alpine
+    container_name: shadow-redis
+    restart: always
+    networks:
+      - shadow-internal
+
+
+networks:
+  shadow-internal:
+    driver: bridge
