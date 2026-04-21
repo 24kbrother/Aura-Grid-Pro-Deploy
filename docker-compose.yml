@@ -19,7 +19,7 @@ services:
 
   # ─── Shadow Home: Unified API + Frontend ─────────────────
   aura-grid:
-    image: ghcr.io/24kbrother/aura-grid-pro:v1.7.9-PRO
+    image: ghcr.io/24kbrother/aura-grid-pro:v1.7.10-PRO
     container_name: aura-grid-pro
     restart: unless-stopped
     environment:
