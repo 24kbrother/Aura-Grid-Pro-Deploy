@@ -36,12 +36,29 @@ fi
 
 # 1. 停止并移除容器、网络及匿名卷
 echo -e "${GREEN}🛑 正在停止容器并移除网络...${NC}"
-if [ -f "docker-compose.prod.yml" ]; then
-    $DOCKER_COMPOSE -f docker-compose.prod.yml down --volumes --remove-orphans
-elif [ -f "docker-compose.yml" ]; then
-    $DOCKER_COMPOSE down --volumes --remove-orphans
+
+# 尝试寻找 Compose 文件 (支持当前目录和 deploy 子目录)
+COMPOSE_FILE=""
+for f in "docker-compose.prod.yml" "deploy/docker-compose.prod.yml" "docker-compose.yml" "deploy/docker-compose.yml"; do
+    if [ -f "$f" ]; then
+        COMPOSE_FILE="$f"
+        break
+    fi
+done
+
+if [ -n "$COMPOSE_FILE" ]; then
+    echo -e "📄 找到配置文件: ${GREEN}$COMPOSE_FILE${NC}"
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" down --volumes --remove-orphans
 else
-    echo -e "${YELLOW}⚠️  未找到 docker-compose 文件，跳过容器停止阶段。${NC}"
+    echo -e "${YELLOW}⚠️  未找到 docker-compose 配置文件，切换至容器名强制清理模式...${NC}"
+    # 强制清理可能的容器名 (针对已知项目名进行回退处理)
+    FORCE_TARGETS=("aura-grid-pro" "aura-redis-pro" "aura-grid-lite" "aura-redis-lite")
+    for container in "${FORCE_TARGETS[@]}"; do
+        if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
+            echo -e "🛑 正在强制停止并移除容器: ${YELLOW}${container}${NC}"
+            docker rm -f "$container" >/dev/null 2>&1
+        fi
+    done
 fi
 
 # 2. 移除 Aura Grid 相关镜像
