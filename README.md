@@ -1,7 +1,7 @@
 # 🧠 Aura Grid Pro - 商业级智能家居交互中台
 
 > **极致性能 · 高级审美 · 工业级可靠性的核心中控**
-> **Current Version**: v1.7.6-PRO (Stable)
+> **Current Version**: v1.7.19-PRO
 
 Aura Grid Pro (商业版代号 **Shadow Smart Home**) 不是另一个简单的 Home Assistant 仪表盘，而是一个**独立的中台式交互内核**。它采用了“影子系统 (Shadow System)”的架构理念，将设备的接入与交互层彻底解耦，为追求极致流畅度和审美体验的极客与专业工程项目而生。
 
