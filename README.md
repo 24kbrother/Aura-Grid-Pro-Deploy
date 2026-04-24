@@ -11,7 +11,7 @@ Aura Grid Pro (商业版代号 **Shadow Smart Home**) 不是另一个简单的 H
 
 ### 🚀 真正意义上的“零延迟”体验
 *   **状态常驻内存**：后端基于 NestJS + WebSocket 与 HA 同步，前端通过 Socket.io 实时推送，彻底告别 Lovelace 的加载焦虑。
-*   **10Hz 状态节流**：独家 `ShallowRef` 响应式隔离技术，即使全屋 2000+ 实体高频变化，UI 依然稳如磐石。
+*   **10Hz 状态节流**：独家 `ShallowRef` 响应式隔离技术，即使全屋 4000+ 实体高频变化，UI 依然稳如磐石。
 
 ### 🎨 影院级视觉美学
 *   **Glassmorphism 2.0**：深度定制的毛玻璃背景体系与微动效库，让 iPad 变成家里的一件艺术品。
@@ -40,14 +40,22 @@ Aura Grid Pro 采用金镜像打包，支持 ARM64/AMD64 架构。
 *   已安装 Docker & Docker Compose。
 *   Home Assistant 服务器（已开启 Long-lived Access Token）。
 
-### 2. 生产环境拉取
-由于本版本为 Pro 专用，镜像存储于私有 GitHub Container Registry。请在 `docker-compose.yml` 中配置您的 GitHub PAT 后，执行以下命令进行热升级：
+### 2. 高级会员一键部署：
+通过LITE版本中查询到的授权激活码页面一键复制安装脚本或使用以下一件部署脚本安装。
 
 ```bash
-docker pull ghcr.io/24kbrother/aura-grid:latest
+curl -sSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/SETUP_PRO.sh | bash SETUP_PRO.sh
+```
+---
+
+### 3. 生产环境拉取
+由于本版本为 Pro 专用，镜像存储于私有 GitHub Container Registry。请在获取到token并 GitHub PAT 后，执行以下命令进行热升级：
+
+```bash
+docker pull ghcr.io/24kbrother/aura-grid-pro:latest
 ```
 
----
+
 
 ## 🔄 版本追踪
 本仓库 (`Aura-Grid-Pro-Deploy`) 仅用于 Pro 版本的**发版通告**与**更新追踪**。
@@ -59,7 +67,7 @@ docker pull ghcr.io/24kbrother/aura-grid:latest
 
 ## 🤝 帮助与支持
 *   **官方教程**: [Bilibili 空间](https://space.bilibili.com/1375690031)
-*   **商业合作**: 请通过仓库主页联系作者。
+*   **商业合作**: 24k.brother@gmail.com
 
 ---
 *Powered by Aura Grid Engine. Designed for the Future.*
