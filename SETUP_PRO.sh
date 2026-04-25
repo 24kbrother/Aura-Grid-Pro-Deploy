@@ -1,13 +1,12 @@
 #!/bin/bash
 
 # =================================================================
-# Aura Grid Pro 生产环境部署程序 (用户名已预设)
+# Aura Grid Pro 生产环境部署程序 (精简版 - 仅处理环境与镜像)
 # =================================================================
 
 # 预设参数
 FIXED_USER="24kservice"
 INPUT_TOKEN=$1
-INPUT_LICENSE=$2
 
 set -e
 
@@ -45,11 +44,12 @@ while true; do
 
     if [ -z "$GH_TOKEN" ]; then
         echo -e "${RED}错误：Token 不能为空。${NC}"
-        [ -n "$INPUT_TOKEN" ] && exit 1 # 参数模式直接退出
+        [ -n "$INPUT_TOKEN" ] && exit 1
         continue
     fi
 
     echo "正在校验权限..."
+    # 尝试登录并将错误输出重定向，保持界面整洁
     if echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
         echo -e "${GREEN}✅ 授权校验通过 (User: $FIXED_USER)${NC}"
         break
@@ -63,21 +63,19 @@ while true; do
     fi
 done
 
-# --- 2. 授权码配置 ---
-LICENSE_KEY=${INPUT_LICENSE:-$(ask_input "请输入项目授权码 (License Key): " "false")}
-[ -z "$INPUT_LICENSE" ] && echo ""
-
-# --- 3. 环境初始化 ---
+# --- 2. 环境初始化 ---
 WORKDIR=$(pwd)
-echo -e "⚙️  正在当前目录 [${WORKDIR}] 初始化生产环境..."
+echo -e "\n⚙️  正在当前目录 [${WORKDIR}] 初始化生产环境..."
 
+# 生成空的或基础的 .env (License 由用户稍后在 Web 端输入)
 cat <<EOF > .env
-LICENSE=$LICENSE_KEY
+# Aura Grid Pro Environment Configuration
 GHCR_USER=$FIXED_USER
+DEPLOY_PATH=$WORKDIR
+# LICENSE 将在系统启动后通过 Web UI 配置
 EOF
 
-# --- 4. 生成 Docker 编排 ---
-# 建议：镜像 Tag 也写死或由脚本控制，确保版本稳定
+# --- 3. 生成 Docker 编排 ---
 IMAGE_URL="ghcr.io/24kbrother/aura-grid-pro:v1.7.19-PRO"
 
 cat <<EOF > docker-compose.yml
@@ -107,24 +105,30 @@ networks:
     driver: bridge
 EOF
 
-# --- 5. 执行部署 ---
+# --- 4. 执行部署 ---
 echo -e "\n🚀 正在拉取生产镜像..."
 docker compose pull
+
 echo -e "🚀 正在启动容器服务..."
 docker compose up -d
 
-# --- 6. 生成升级脚本 (自动锁定凭证) ---
+# --- 5. 生成升级脚本 (自动锁定凭证) ---
 cat <<EOF > UPDATE_PRO.sh
 #!/bin/bash
 echo "正在执行 Aura Grid Pro 无损升级..."
 echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null
 docker compose pull && docker compose up -d
-echo "✅ 升级完成！"
+echo "✅ 更新完成！"
 EOF
 chmod +x UPDATE_PRO.sh
 
+# 获取本机 IP
+IP_ADDR=$(hostname -I | awk '{print $1}')
+
 echo -e "\n${GREEN}==================================================${NC}"
 echo -e "🎉 Aura Grid Pro 部署成功！"
-echo -e "🔹 访问入口: http://$(hostname -I | awk '{print $1}'):8125"
+echo -e "--------------------------------------------------"
+echo -e "🔹 访问入口: ${BLUE}http://${IP_ADDR}:8125${NC}"
+echo -e "🔹 请进入系统后，按照引导输入您的授权码 (License)"
 echo -e "🔹 升级管理: sudo bash ./UPDATE_PRO.sh"
 echo -e "${GREEN}==================================================${NC}"
