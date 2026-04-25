@@ -1,25 +1,28 @@
 #!/bin/bash
 
 # =================================================================
-# Aura Grid Pro 生产环境部署程序 (支持管道运行)
+# Aura Grid Pro 生产环境部署程序 (用户名已预设)
 # =================================================================
+
+# 预设参数
+FIXED_USER="24kservice"
+INPUT_TOKEN=$1
+INPUT_LICENSE=$2
 
 set -e
 
-# 颜色
+# 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
 NC='\033[0m'
 
-echo -e "🏗️  正在启动 Aura Grid Pro 部署..."
-
-# 交互输入函数：专门处理 curl | bash 带来的 TTY 缺失问题
+# 交互输入工具函数 (强制指向 TTY)
 ask_input() {
     local prompt=$1
     local is_secret=$2
     local val
-    # 强制从当前终端设备读取，而不是从管道读取
     if [ "$is_secret" = "true" ]; then
         read -sp "$(echo -e "${YELLOW}$prompt${NC}")" val < /dev/tty
     else
@@ -28,47 +31,59 @@ ask_input() {
     echo "$val"
 }
 
-# --- 登录校验逻辑 ---
+echo -e "${BLUE}==================================================${NC}"
+echo -e "🏗️  ${GREEN}正在启动 Aura Grid Pro 部署程序 (2026 Build)${NC}"
+echo -e "${BLUE}==================================================${NC}"
+
+# --- 1. GHCR 登录校验 ---
 echo -e "\n🔑 正在配置私有镜像访问权限..."
 
 while true; do
-    GH_USER=$(ask_input "请输入 GitHub 用户名: " "false")
-    echo "" # 换行
-    GH_TOKEN=$(ask_input "请输入 GitHub Access Token (PAT): " "true")
-    echo ""
+    # 优先使用命令行参数，否则交互输入
+    GH_TOKEN=${INPUT_TOKEN:-$(ask_input "请输入项目专属部署 Token: " "true")}
+    [ -z "$INPUT_TOKEN" ] && echo "" # 交互模式补回换行
 
-    if [ -z "$GH_USER" ] || [ -z "$GH_TOKEN" ]; then
-        echo -e "${RED}错误：用户名和 Token 不能为空。${NC}"
+    if [ -z "$GH_TOKEN" ]; then
+        echo -e "${RED}错误：Token 不能为空。${NC}"
+        [ -n "$INPUT_TOKEN" ] && exit 1 # 参数模式直接退出
         continue
     fi
 
-    echo "尝试登录 ghcr.io..."
-    if echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin; then
-        echo -e "${GREEN}✅ 登录成功！${NC}"
+    echo "正在校验权限..."
+    if echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
+        echo -e "${GREEN}✅ 授权校验通过 (User: $FIXED_USER)${NC}"
         break
     else
-        echo -e "${RED}❌ 登录失败，请检查输入或网络。${NC}"
-        echo -e "提示：中国大陆用户如遇超时，请检查系统代理或镜像加速设置。"
+        echo -e "${RED}❌ 授权失败！Token 可能无效或已过期。${NC}"
+        if [ -n "$INPUT_TOKEN" ]; then
+            echo "请检查提供的 Token 参数。"
+            exit 1
+        fi
+        echo "请重新尝试输入..."
     fi
 done
 
-# --- 配置文件生成 ---
+# --- 2. 授权码配置 ---
+LICENSE_KEY=${INPUT_LICENSE:-$(ask_input "请输入项目授权码 (License Key): " "false")}
+[ -z "$INPUT_LICENSE" ] && echo ""
+
+# --- 3. 环境初始化 ---
 WORKDIR=$(pwd)
-echo -e "\n⚙️  正在初始化配置文件..."
-# 这里如果还需要输入 License，也用 ask_input
-LICENSE_KEY=$(ask_input "请输入项目授权码 (License): " "false")
-echo ""
+echo -e "⚙️  正在当前目录 [${WORKDIR}] 初始化生产环境..."
 
 cat <<EOF > .env
 LICENSE=$LICENSE_KEY
-GHCR_USER=$GH_USER
+GHCR_USER=$FIXED_USER
 EOF
 
-# --- 编排与启动 ---
+# --- 4. 生成 Docker 编排 ---
+# 建议：镜像 Tag 也写死或由脚本控制，确保版本稳定
+IMAGE_URL="ghcr.io/24kbrother/aura-grid-pro:v1.7.19-PRO"
+
 cat <<EOF > docker-compose.yml
 services:
   aura-grid:
-    image: ghcr.io/24kbrother/aura-grid-pro:v1.7.19-PRO
+    image: ${IMAGE_URL}
     container_name: aura-grid-pro
     restart: always
     env_file: .env
@@ -76,12 +91,40 @@ services:
       - "8125:8125"
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - aura-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: aura-redis
+    restart: always
+    networks:
+      - aura-net
+
+networks:
+  aura-net:
+    driver: bridge
 EOF
 
-echo -e "🚀 正在拉取镜像并启动..."
+# --- 5. 执行部署 ---
+echo -e "\n🚀 正在拉取生产镜像..."
 docker compose pull
+echo -e "🚀 正在启动容器服务..."
 docker compose up -d
 
+# --- 6. 生成升级脚本 (自动锁定凭证) ---
+cat <<EOF > UPDATE_PRO.sh
+#!/bin/bash
+echo "正在执行 Aura Grid Pro 无损升级..."
+echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null
+docker compose pull && docker compose up -d
+echo "✅ 升级完成！"
+EOF
+chmod +x UPDATE_PRO.sh
+
 echo -e "\n${GREEN}==================================================${NC}"
-echo -e "🎉 部署完成！访问地址: http://$(hostname -I | awk '{print $1}'):8125"
+echo -e "🎉 Aura Grid Pro 部署成功！"
+echo -e "🔹 访问入口: http://$(hostname -I | awk '{print $1}'):8125"
+echo -e "🔹 升级管理: sudo bash ./UPDATE_PRO.sh"
 echo -e "${GREEN}==================================================${NC}"
