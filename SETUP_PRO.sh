@@ -7,7 +7,7 @@
 # 预设参数
 FIXED_USER="24kservice"
 INPUT_TOKEN=$1
-IMAGE="ghcr.io/24kbrother/aura-grid-pro:v1.7.19-PRO"
+IMAGE="ghcr.io/24kbrother/aura-grid-pro:latest"
 CENTRAL_API="https://api.vlanhub.com"
 
 set -e#!/bin/bash
