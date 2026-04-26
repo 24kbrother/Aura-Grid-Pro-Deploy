@@ -37,7 +37,7 @@ echo -e "🏗️  ${GREEN}正在启动 Aura Grid Pro 部署程序 (2026 Build)${
 echo -e "${BLUE}==================================================${NC}"
 
 # --- 1. GHCR 登录校验 ---
-echo -e "\n🔑 正在配置私有镜像访问权限..."
+echo -e "\n🔑 正在配置私有镜像访问权限...如果没有token,请联系Email: 24k.brother@gmail.com获取最新token"
 
 while true; do
     GH_TOKEN=${INPUT_TOKEN:-$(ask_input "请输入项目专属部署 Token: " "true")}
@@ -54,7 +54,7 @@ while true; do
         echo -e "${GREEN}✅ 授权校验通过 (User: $FIXED_USER)${NC}"
         break
     else
-        echo -e "${RED}❌ 授权失败！Token 可能无效或已过期。${NC}"
+        echo -e "${RED}❌ 授权失败！Token 可能无效或已过期。请联系Email: 24k.brother@gmail.com获取最新token${NC}"
         if [ -n "$INPUT_TOKEN" ]; then
             exit 1
         fi
