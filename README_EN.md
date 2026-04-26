@@ -79,7 +79,7 @@ Aura Grid Pro 采用金镜像打包，完美兼容 AMD64 与 ARM64 架构。
 执行以下统一脚本，系统会自动识别当前环境，执行全新安装或保留配置的无损升级。
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/SETUP_PRO.sh | bash
+curl -sSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/SETUP_PRO.sh | sudo bash SETUP_PRO.sh
 ```
 
 ---
