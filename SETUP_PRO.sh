@@ -7,7 +7,7 @@
 # 预设参数
 FIXED_USER="24kservice"
 INPUT_TOKEN=$1
-VERSION="v1.8.0-PRO"
+VERSION="latest"
 IMAGE_URL="ghcr.io/24kbrother/aura-grid-pro:${VERSION}"
 
 set -e
