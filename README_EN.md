@@ -34,7 +34,7 @@ Aura Grid Pro is distributed as a Golden Image, supporting both AMD64 and ARM64 
 Run the unified deployment script to initiate a fresh install or a non-destructive upgrade.
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/main/SETUP_PRO.sh | bash ./SETUP_PRO.sh
+curl -sSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/main/SETUP_PRO.sh | bash 
 ```
 
 ---
