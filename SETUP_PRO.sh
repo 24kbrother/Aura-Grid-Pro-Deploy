@@ -195,7 +195,6 @@ services:
       - ./data:/app/prisma/data
       - ./floorplans:/app/floorplans
       - ./icons:/app/icons
-      # 💡 核心指纹映射：使得 Pro 系统的原生环境使用 Lite 固化指纹
       - ./data/device.id:/etc/machine-id:ro
     networks:
       - aura-net
