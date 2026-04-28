@@ -3,34 +3,74 @@
 # Aura Grid Pro 生产环境无损管道升级脚本
 # =================================================================
 
-# 1. 提取传入的 Token 参数
 GH_TOKEN=$1
 
-# 校验参数是否为空
+# 1. 鉴权校验
 if [ -z "$GH_TOKEN" ]; then
-    echo -e "\033[0;31m❌ 错误：缺少必要的专属升级 Token，操作被拒绝。\033[0m"
-    echo -e "\033[0;33m💡 请在前端面板重新获取升级指令，或联系作者索取有效 Token。\033[0m"
+    echo -e "\033[0;31m[ERROR] 缺少必要的专属升级 Token，操作被拒绝。\033[0m"
+    echo -e "\033[0;33m[TIP] 请在大屏前端面板点击“获取专属升级指令”以包含临时令牌。\033[0m"
     exit 1
 fi
 
-echo "⚙️ 正在执行 Aura Grid Pro 高阶无损升级程序..."
+echo -e "\033[0;34m==============================================================\033[0m"
+echo -e "\033[1;36m         欢迎使用 Aura Grid Pro VIP专属云端自动更新系统          \033[0m"
+echo -e "\033[0;34m==============================================================\033[0m"
 
-# 固定私有仓库用户名
+# 2. 交互告知与前置拦截
+echo -e "\033[1;33m[重要提示]\033[0m"
+echo -e "本程序将自动探测并拉取最新生产级 Golden Image。为保障数据安全："
+echo -e "  1. 若您曾手动修改过 docker-compose 编排文件，升级可能会产生冲突。"
+echo -e "  2. 强烈建议在执行更新前，前往大屏页面手动点击「导出全量工程备份」。"
+echo -e ""
+echo -e "\033[1;34m[VIP 售后与技术支持通道]\033[0m"
+echo -e "  Email: 24k.brother@gmail.com"
+echo -e "  WeChat: china_24kbro"
+echo -e "\033[0;34m==============================================================\033[0m"
+
+read -p "是否已做好备份并准备执行更新？(请输入 yes 继续): " CONFIRM
+if [ "$CONFIRM" != "yes" ]; then
+    echo -e "\033[0;31m[ABORT] 用户取消升级。请在安全备份后重新发起。\033[0m"
+    exit 0
+fi
+
+# 3. 指纹防丢失保护
+if [ -f "./data/device.id" ]; then
+    cp ./data/device.id ./device.id.bak
+fi
+
+# 4. 私有镜像鉴权
+echo -e "\n\033[1;34m[*] 正在验证私有仓库拉取权限...\033[0m"
 FIXED_USER="24kservice"
-
-# 2. 尝试登录 GitHub 私有镜像仓库
-echo "🔐 正在验证私有仓库拉取权限..."
 if echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
-    echo "✅ 权限鉴权成功，正在拉取最新镜像..."
+    echo -e "\033[0;32m[+] 鉴权通过，成功接入云端仓库。\033[0m"
 else
-    echo -e "\033[0;31m❌ 错误：Token 鉴权失败，该令牌可能已过期或无效！\033[0m"
+    echo -e "\033[0;31m[-] 鉴权失败：Token 无效或已过期，请重新获取。\033[0m"
+    [ -f "./device.id.bak" ] && rm -f ./device.id.bak
     exit 1
 fi
 
-# 3. 拉取并重载容器
+# 5. 自动探测并升级 docker-compose.yml 镜像标签
+COMPOSE_FILE="docker-compose.yml"
+if [ -f "$COMPOSE_FILE" ]; then
+    if grep -q "ghcr.io/24kbrother/aura-grid-pro" "$COMPOSE_FILE"; then
+        echo -e "\033[1;34m[*] 正在适配本地容器版本标识...\033[0m"
+        sed -i.original -E 's|(image:[[:space:]]*ghcr\.io/24kbrother/aura-grid-pro):.*|\1:latest|g' "$COMPOSE_FILE"
+    fi
+fi
+
+# 6. 执行镜像更新
 if docker compose pull && docker compose up -d --remove-orphans; then
-    echo -e "\033[0;32m🎉 恭喜！Aura Grid Pro 生产镜像已成功就地升级！\033[0m"
+    echo -e "\n\033[0;32m[SUCCESS] Aura Grid Pro 生产镜像已顺利升级完成。\033[0m"
+    
+    # 7. 清理并销毁临时文件
+    if [ -f "./device.id.bak" ]; then
+        mv ./device.id.bak ./data/device.id
+    fi
+    [ -f "${COMPOSE_FILE}.original" ] && rm -f "${COMPOSE_FILE}.original"
 else
-    echo -e "\033[0;31m❌ 错误：容器编排或镜像拉取过程中断。\033[0m"
+    echo -e "\033[0;31m[ERROR] 升级过程中断，正在为您紧急恢复指纹保护层...\033[0m"
+    if [ -f "./device.id.bak" ]; then
+         mv ./device.id.bak ./data/device.id
+    fi
     exit 1
 fi
