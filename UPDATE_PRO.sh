@@ -33,6 +33,16 @@ if [ "$CONFIRM" != "yes" ]; then
     exit 0
 fi
 
+# 2.5 临时网络代理加速（可选）
+read -p "是否需要配置临时 HTTP 代理加速拉取？(直接回车跳过，若需要请输入如 http://127.0.0.1:7890 ): " PROXY_URL </dev/tty
+if [ -n "$PROXY_URL" ]; then
+    export http_proxy=$PROXY_URL
+    export https_proxy=$PROXY_URL
+    export HTTP_PROXY=$PROXY_URL
+    export HTTPS_PROXY=$PROXY_URL
+    echo -e "[INFO] 临时网络代理配置成功。"
+fi
+
 # 3. 指纹防丢失保护
 if [ -f "./data/device.id" ]; then
     cp ./data/device.id ./device.id.bak
