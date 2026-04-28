@@ -27,7 +27,7 @@ echo -e "  Email: 24k.brother@gmail.com"
 echo -e "  WeChat: china_24kbro"
 echo -e "\033[0;34m==============================================================\033[0m"
 
-read -p "是否已做好备份并准备执行更新？(请输入 yes 继续): " CONFIRM
+read -p "是否已做好备份并准备执行更新？(请输入 yes 继续): " CONFIRM </dev/tty
 if [ "$CONFIRM" != "yes" ]; then
     echo -e "\033[0;31m[ABORT] 用户取消升级。请在安全备份后重新发起。\033[0m"
     exit 0
