@@ -10,8 +10,9 @@
 # 预设参数
 FIXED_USER="24kservice"
 INPUT_TOKEN=$1
-VERSION="v1.8.1-PRO"
+VERSION="latest"
 IMAGE_URL="ghcr.io/24kbrother/aura-grid-pro:${VERSION}"
+
 
 set -e
 
@@ -56,6 +57,18 @@ ask_input() {
 echo -e "${BLUE}==================================================${NC}"
 echo -e "🏗️  ${GREEN}正在启动 Aura Grid Pro 交付管理程序${NC}"
 echo -e "${BLUE}==================================================${NC}"
+
+# --- 0.5 临时网络代理加速（可选） ---
+echo -e "\n🌐 代理加速配置 (直接回车可跳过)："
+read -p "$(echo -e "${YELLOW}国内环境拉取若较慢，请输入代理服务器地址 (例如 http://127.0.0.1:7890): ${NC}")" PROXY_URL < /dev/tty
+if [ -n "$PROXY_URL" ]; then
+    export http_proxy="$PROXY_URL"
+    export https_proxy="$PROXY_URL"
+    export HTTP_PROXY="$PROXY_URL"
+    export HTTPS_PROXY="$PROXY_URL"
+    echo -e "${GREEN}✅ 已为当前安装流载入临时网络代理。${NC}\n"
+fi
+
 
 # --- 1. GHCR 登录校验 ---
 echo -e "\n🔑 正在配置私有镜像访问权限..."
@@ -129,9 +142,16 @@ if [ -n "$LITE_DIR" ] && [ -d "$LITE_DIR" ]; then
             alpine sh -c "cp -f /source/prod.db /dest/prod.db 2>/dev/null || true" 2>/dev/null || true
     fi
 else
+    # 【场景二】全新首装模式
+    # 💡 无条件为全新安装环境创建并收拢至专用子目录 ./aura-pro，坚决不弄脏当前目录
+    mkdir -p ./aura-pro
+    cd ./aura-pro
     WORKDIR=$(pwd)
     echo -e "${GREEN}✨ 未检测到历史安装，当前将开启【PRO 专属正版首装】模式。${NC}"
+    echo -e "📂 本次服务将被安全安装在物理路径: ${BLUE}${WORKDIR}${NC}"
 fi
+
+
 
 # --- 3. 部署统一配置准备 ---
 mkdir -p "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
@@ -232,5 +252,6 @@ echo -e "\n${GREEN}==================================================${NC}"
 echo -e "🎉 Aura Grid Pro 部署交接成功！"
 echo -e "--------------------------------------------------"
 echo -e "🔹 访问入口: ${BLUE}http://${IP_ADDR}:8125${NC}"
+echo -e "🔹 安装目录: ${BLUE}${WORKDIR}${NC}"
 echo -e "🔹 升级更新: bash ./UPDATE_PRO.sh"
 echo -e "${GREEN}==================================================${NC}"
