@@ -1,13 +1,16 @@
 #!/bin/bash
 
 # =================================================================
-# Aura Grid Pro 生产环境统一部署程序 (兼容 Lite 无缝升级)
+# 👑 Aura Grid Pro 生产环境多态一键安装/升级程序 (2026 坚不可摧版)
+# 支持：
+#   1. 检测到 Lite 全自动安全热升级 (无损继承)
+#   2. 从未安装 Lite 的全新正版首装
 # =================================================================
 
 # 预设参数
 FIXED_USER="24kservice"
 INPUT_TOKEN=$1
-VERSION="latest"
+VERSION="v1.8.1-PRO"
 IMAGE_URL="ghcr.io/24kbrother/aura-grid-pro:${VERSION}"
 
 set -e
@@ -19,7 +22,25 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# 交互输入工具函数
+# --- 0. 权限与 NAS 命令行降级防御 ---
+DOCKER_CMD="docker"
+if [ "$EUID" -ne 0 ]; then
+    if command -v sudo &>/dev/null; then
+        DOCKER_CMD="sudo docker"
+    fi
+fi
+
+# 兼容老旧版本 Docker 的 docker-compose/docker compose 判定
+COMPOSE_CMD="$DOCKER_CMD compose"
+if ! $DOCKER_CMD compose version &>/dev/null; then
+    if command -v docker-compose &>/dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
+        echo -e "${RED}❌ 未检测到 docker compose 核心组件，请先安装 Docker 环境。${NC}"
+        exit 1
+    fi
+fi
+
 ask_input() {
     local prompt=$1
     local is_secret=$2
@@ -33,12 +54,11 @@ ask_input() {
 }
 
 echo -e "${BLUE}==================================================${NC}"
-echo -e "🏗️  ${GREEN}正在启动 Aura Grid Pro 部署程序 (2026 Build)${NC}"
+echo -e "🏗️  ${GREEN}正在启动 Aura Grid Pro 交付管理程序${NC}"
 echo -e "${BLUE}==================================================${NC}"
 
 # --- 1. GHCR 登录校验 ---
 echo -e "\n🔑 正在配置私有镜像访问权限..."
-
 while true; do
     GH_TOKEN=${INPUT_TOKEN:-$(ask_input "请输入项目专属部署 Token: " "true")}
     [ -z "$INPUT_TOKEN" ] && echo ""
@@ -49,8 +69,8 @@ while true; do
         continue
     fi
 
-    echo "正在校验权限..."
-    if echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
+    echo "正在校验云端部署授权..."
+    if echo "$GH_TOKEN" | $DOCKER_CMD login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
         echo -e "${GREEN}✅ 授权校验通过 (User: $FIXED_USER)${NC}"
         break
     else
@@ -58,125 +78,85 @@ while true; do
         if [ -n "$INPUT_TOKEN" ]; then
             exit 1
         fi
-        echo "请重新尝试输入..."
+        continue
     fi
 done
 
-# --- 2. Lite 环境冲突检测 ---
-WORKDIR=$(pwd)
+# --- 2. 状态嗅探与环境动态决策 ---
+echo -e "\n🔍 正在进行系统环境拓扑扫描..."
 
-# 三重指纹检测：覆盖所有历史 Lite 版本（v1.0.1 ~ 最新脚本版）
-IS_LITE_DIR=false
-if [ -f "./docker-compose.yml" ]; then
-    if grep -qE 'aura-grid(-lite)?:|aura-internal|aura-lite-internal' ./docker-compose.yml 2>/dev/null \
-       && ! grep -q 'aura-grid-pro' ./docker-compose.yml 2>/dev/null; then
-        IS_LITE_DIR=true
+# A. 嗅探是否有 Lite 正在运行，并拔出其真实的宿主机挂载目录
+LITE_CONTAINER=$($DOCKER_CMD ps -q -f name=aura-grid)
+LITE_DIR=""
+
+if [ -n "$LITE_CONTAINER" ]; then
+    LITE_PHYSICAL_PATH=$($DOCKER_CMD inspect --format='{{range .Mounts}}{{if eq .Destination "/app/data"}}{{.Source}}{{end}}{{end}}' "$LITE_CONTAINER" 2>/dev/null || true)
+    if [ -n "$LITE_PHYSICAL_PATH" ]; then
+        LITE_DIR=$(dirname "$LITE_PHYSICAL_PATH")
     fi
 fi
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -qE '^aura-grid(-lite)?$'; then
-    IS_LITE_DIR=true
-fi
-if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -qE '^aura-(db|lite-db)-data$'; then
-    IS_LITE_DIR=true
+
+if [ -z "$LITE_DIR" ] && [ -f "./docker-compose.yml" ]; then
+    if grep -q 'ghcr.io/24kbrother/aura-grid:' ./docker-compose.yml 2>/dev/null; then
+        LITE_DIR=$(pwd)
+    fi
 fi
 
-UPGRADE_MODE="fresh"  # fresh | parallel | overwrite
-
-if [ "$IS_LITE_DIR" = "true" ]; then
-    echo ""
+if [ -n "$LITE_DIR" ] && [ -d "$LITE_DIR" ]; then
     echo -e "╔══════════════════════════════════════════════════════╗"
-    echo -e "║         ⚠️   检测到 Aura Grid Lite 环境！          ║"
+    echo -e "║        ⚡   检测到 AURA-LITE 版历史痕迹！          ║"
     echo -e "╚══════════════════════════════════════════════════════╝"
-    echo ""
-    echo -e "  当前目录或系统中存在正在运行的 ${YELLOW}Lite${NC} 版本。"
-    echo -e "  请选择您的升级方式："
-    echo ""
-    echo -e "  ${GREEN}[1] 推荐：平行安装（Lite 与 Pro 共存，互不影响）${NC}"
-    echo -e "      ${GREEN}→ 请 Ctrl+C 退出，在新目录中重新执行此脚本${NC}"
-    echo -e "      ${GREEN}  例：mkdir ~/aura-pro && cd ~/aura-pro && bash ./SETUP_PRO.sh${NC}"
-    echo ""
-    echo -e "  [2] 覆盖升级（在当前目录替换 Lite 为 Pro）"
-    echo -e "      ${RED}⚠️  重要警告：该操作具有一定风险！${NC}"
-    echo -e "      ${RED}   请务必先进入 Lite Web 界面 → 系统设置，${NC}"
-    echo -e "      ${RED}   完成「导出布局配置」或「导出全量工程备份」${NC}"
-    echo -e "      ${RED}   再回到此处执行覆盖升级操作！${NC}"
-    echo ""
-    read -p "$(echo -e "  请输入 [1] 跳出 / [2] 覆盖升级：") " LITE_CHOICE < /dev/tty
+    echo -e "  已成功锁定您的历史安装物理路径: ${BLUE}${LITE_DIR}${NC}"
+    echo -e "  我们将执行 ${GREEN}【一键安全热升级】${NC}："
+    echo -e "  ✨ 自动迁移您的历史全量数据库、户型图和自定义图标。"
+    echo -e "  ✨ 设备指纹完美继承，绝不触发 30 天封锁死锁。"
+    echo -e " --------------------------------------------------------"
+    read -p "$(echo -e "  按 ${YELLOW}任意键${NC} 开启无缝跨代升级，或 Ctrl+C 退出：") " </dev/tty
 
-    if [ "$LITE_CHOICE" = "2" ]; then
-        # 二次确认
-        echo ""
-        echo -e "  ${RED}╔══════════════════════════════════════════════════════╗${NC}"
-        echo -e "  ${RED}║          ⛔  最终确认 — 高风险操作                 ║${NC}"
-        echo -e "  ${RED}╚══════════════════════════════════════════════════════╝${NC}"
-        echo -e "  ${RED}  您即将停止 Lite 版本并覆盖其配置文件！${NC}"
-        echo -e "  ${RED}  若未提前备份数据，配置数据将有丢失风险。${NC}"
-        echo ""
-        read -p "$(echo -e "  ${RED}确认继续？请输入大写 YES 确认，其他任意键取消：${NC} ") " FINAL_CONFIRM < /dev/tty
-        if [ "$FINAL_CONFIRM" != "YES" ]; then
-            echo -e "\n${GREEN}✅ 已取消覆盖操作，Lite 版本保持不变。${NC}"
-            echo -e "   建议：在新目录执行脚本进行平行安装。"
-            exit 0
-        fi
-        UPGRADE_MODE="overwrite"
-        echo ""
-        echo -e "${YELLOW}⚙️  正在停止并清理 Lite 容器...${NC}"
-        docker stop aura-grid aura-grid-lite aura-redis aura-redis-lite 2>/dev/null || true
-        docker rm   aura-grid aura-grid-lite aura-redis aura-redis-lite 2>/dev/null || true
+    cd "$LITE_DIR"
+    WORKDIR=$(pwd)
 
-        # 尝试从具名 Volume 导出 SQLite 数据库（兼容所有历史版本）
+    echo -e "${YELLOW}⚙️  正在停止并解耦 LITE 容器实例...${NC}"
+    $DOCKER_CMD stop aura-grid aura-redis 2>/dev/null || true
+    $DOCKER_CMD rm   aura-grid aura-redis 2>/dev/null || true
+
+    if $DOCKER_CMD volume inspect aura-db-data &>/dev/null; then
+        echo -e "${YELLOW}📦 正在为您的历史配置建立独立迁移...${NC}"
         mkdir -p ./data
-        for VOL in aura-db-data aura-lite-db-data; do
-            if docker volume inspect "$VOL" &>/dev/null; then
-                echo -e "${YELLOW}📦 正在从 Volume [$VOL] 迁移数据库...${NC}"
-                docker run --rm \
-                    -v "$VOL":/source \
-                    -v "$(pwd)/data":/dest \
-                    alpine sh -c "cp -f /source/prod.db /dest/prod.db 2>/dev/null || echo '目录为空，跳过'" 2>/dev/null || true
-                echo -e "${GREEN}✅ 数据库已迁移至 ./data/prod.db${NC}"
-                break
-            fi
-        done
-    else
-        # 选 [1] 或任何非 2 输入 → 直接退出引导
-        echo ""
-        echo -e "${GREEN}✅ 已退出。请在新目录中重新执行脚本以完成平行安装。${NC}"
-        echo -e "   例：${BLUE}mkdir ~/aura-pro && cd ~/aura-pro && bash ./SETUP_PRO.sh${NC}"
-        exit 0
+        $DOCKER_CMD run --rm \
+            -v aura-db-data:/source \
+            -v "$(pwd)/data":/dest \
+            alpine sh -c "cp -f /source/prod.db /dest/prod.db 2>/dev/null || true" 2>/dev/null || true
     fi
-fi
-
-# --- 3. 环境初始化与设备指纹处理 ---
-echo -e "\n⚙️  正在当前目录 [${WORKDIR}] 初始化环境..."
-
-
-# 创建核心挂载目录
-mkdir -p ./data ./floorplans ./icons
-chmod -R 777 ./data ./floorplans ./icons
-
-# 检查/生成设备指纹以确保连续性
-HWID_FILE="./data/device.id"
-if [ -f "$HWID_FILE" ]; then
-    EXISTING_HWID=$(cat "$HWID_FILE")
-    echo -e "${GREEN}✅ 检测到已有设备指纹 (${EXISTING_HWID})，正在为您无缝继承...${NC}"
 else
-    # 生成一个新的标准 UUID
-    NEW_HWID=$(cat /proc/sys/kernel/random/uuid)
-    echo "$NEW_HWID" > "$HWID_FILE"
-    echo -e "${GREEN}✨ 已生成全新设备指纹: ${NEW_HWID}${NC}"
+    WORKDIR=$(pwd)
+    echo -e "${GREEN}✨ 未检测到历史安装，当前将开启【PRO 专属正版首装】模式。${NC}"
 fi
 
-cat <<EOF > .env
-# Aura Grid Pro Environment Configuration
+# --- 3. 部署统一配置准备 ---
+mkdir -p "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
+chmod -R 777 "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
+
+HWID_FILE="$WORKDIR/data/device.id"
+if [ ! -f "$HWID_FILE" ]; then
+    # 多级 UUID 物理兼容回退
+    if [ -f /proc/sys/kernel/random/uuid ]; then
+        NEW_HWID=$(cat /proc/sys/kernel/random/uuid)
+    elif command -v uuidgen &>/dev/null; then
+        NEW_HWID=$(uuidgen)
+    else
+        NEW_HWID=$(od -x /dev/urandom | head -n 1 | awk '{print $2$3"-"$4"-"$5"-"$6"-"$7$8$9}')
+    fi
+    echo "$NEW_HWID" > "$HWID_FILE"
+fi
+
+cat <<EOF > "$WORKDIR/.env"
 GHCR_USER=$FIXED_USER
 DEPLOY_PATH=$WORKDIR
-# LICENSE 将在系统启动后通过 Web UI 配置
 EOF
 
-# --- 3. 生成精校版 Docker 编排 ---
-echo -e "\n📦 生成编排文件..."
-
-cat <<EOF > docker-compose.yml
+# --- 4. 生成 PRO 版一致性编排文件 ---
+cat <<EOF > "$WORKDIR/docker-compose.yml"
 services:
   aura-grid:
     image: ${IMAGE_URL}
@@ -203,41 +183,54 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: aura-redis
+    container_name: aura-redis-pro
     restart: always
     command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_pro_data:/data
     networks:
       - aura-net
 
 networks:
   aura-net:
     driver: bridge
+
+volumes:
+  redis_pro_data:
+    name: aura-redis-pro-data
 EOF
 
-# --- 4. 执行部署 ---
-echo -e "\n🚀 正在拉取生产镜像..."
-docker compose pull
+# --- 5. 执行一键启动 ---
+echo -e "\n🚀 正在拉取最新的 PRO 黄金镜像..."
+$COMPOSE_CMD pull
 
-echo -e "🚀 正在启动容器服务..."
-docker compose up -d
+echo -e "🚀 正在启动 Aura Grid Pro 服务组..."
+$COMPOSE_CMD up -d
 
-# --- 5. 生成升级脚本 ---
-cat <<EOF > UPDATE_PRO.sh
+cat <<EOF > "$WORKDIR/UPDATE_PRO.sh"
 #!/bin/bash
-echo "正在执行 Aura Grid Pro 无损升级..."
-echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null
-docker compose pull && docker compose up -d --remove-orphans
+echo "正在执行 Aura Grid Pro 无损更新..."
+if command -v sudo &>/dev/null; then
+    sudo docker login ghcr.io -u "$FIXED_USER" -p "$GH_TOKEN" &>/dev/null
+    sudo docker compose pull && sudo docker compose up -d --remove-orphans
+else
+    docker login ghcr.io -u "$FIXED_USER" -p "$GH_TOKEN" &>/dev/null
+    docker compose pull && docker compose up -d --remove-orphans
+fi
 echo "✅ 更新完成！"
 EOF
-chmod +x UPDATE_PRO.sh
+chmod +x "$WORKDIR/UPDATE_PRO.sh"
 
-# 获取本机 IP
-IP_ADDR=$(hostname -I | awk '{print $1}')
+# 优雅多端 IP 获取 (兼容纯净版 BusyBox grep)
+IP_ADDR=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}')
+if [ -z "$IP_ADDR" ]; then
+    IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}')
+fi
+[ -z "$IP_ADDR" ] && IP_ADDR="127.0.0.1"
 
 echo -e "\n${GREEN}==================================================${NC}"
-echo -e "🎉 Aura Grid Pro 部署成功！"
+echo -e "🎉 Aura Grid Pro 部署交接成功！"
 echo -e "--------------------------------------------------"
 echo -e "🔹 访问入口: ${BLUE}http://${IP_ADDR}:8125${NC}"
-echo -e "🔹 请进入系统后，按照引导输入您的授权码 (License)"
-echo -e "🔹 升级管理: sudo bash ./UPDATE_PRO.sh"
+echo -e "🔹 升级更新: bash ./UPDATE_PRO.sh"
 echo -e "${GREEN}==================================================${NC}"
