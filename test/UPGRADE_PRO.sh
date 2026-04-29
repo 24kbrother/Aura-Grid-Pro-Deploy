@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =================================================================
-# 👑 Aura Grid Pro 生产环境多态一键安装/升级程序 (2026 金牌架构)
+# 👑 Aura Grid Pro 生产环境多态一键安装/升级程序 (2026 坚不可摧版)
 # 支持：
 #   1. 检测到 Lite 全自动安全热升级 (无损继承)
 #   2. 从未安装 Lite 的全新正版首装
@@ -27,6 +27,17 @@ DOCKER_CMD="docker"
 if [ "$EUID" -ne 0 ]; then
     if command -v sudo &>/dev/null; then
         DOCKER_CMD="sudo docker"
+    fi
+fi
+
+# 兼容老旧版本 Docker 的 docker-compose/docker compose 判定
+COMPOSE_CMD="$DOCKER_CMD compose"
+if ! $DOCKER_CMD compose version &>/dev/null; then
+    if command -v docker-compose &>/dev/null; then
+        COMPOSE_CMD="docker-compose"
+    else
+        echo -e "${RED}❌ 未检测到 docker compose 核心组件，请先安装 Docker 环境。${NC}"
+        exit 1
     fi
 fi
 
@@ -128,7 +139,14 @@ chmod -R 777 "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
 
 HWID_FILE="$WORKDIR/data/device.id"
 if [ ! -f "$HWID_FILE" ]; then
-    NEW_HWID=$(cat /proc/sys/kernel/random/uuid)
+    # 多级 UUID 物理兼容回退
+    if [ -f /proc/sys/kernel/random/uuid ]; then
+        NEW_HWID=$(cat /proc/sys/kernel/random/uuid)
+    elif command -v uuidgen &>/dev/null; then
+        NEW_HWID=$(uuidgen)
+    else
+        NEW_HWID=$(od -x /dev/urandom | head -n 1 | awk '{print $2$3"-"$4"-"$5"-"$6"-"$7$8$9}')
+    fi
     echo "$NEW_HWID" > "$HWID_FILE"
 fi
 
@@ -184,10 +202,10 @@ EOF
 
 # --- 5. 执行一键启动 ---
 echo -e "\n🚀 正在拉取最新的 PRO 黄金镜像..."
-$DOCKER_CMD compose pull
+$COMPOSE_CMD pull
 
 echo -e "🚀 正在启动 Aura Grid Pro 服务组..."
-$DOCKER_CMD compose up -d
+$COMPOSE_CMD up -d
 
 cat <<EOF > "$WORKDIR/UPDATE_PRO.sh"
 #!/bin/bash
@@ -203,8 +221,11 @@ echo "✅ 更新完成！"
 EOF
 chmod +x "$WORKDIR/UPDATE_PRO.sh"
 
-# 优雅多端 IP 获取
-IP_ADDR=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || hostname -I 2>/dev/null | awk '{print $1}')
+# 优雅多端 IP 获取 (兼容纯净版 BusyBox grep)
+IP_ADDR=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}')
+if [ -z "$IP_ADDR" ]; then
+    IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}')
+fi
 [ -z "$IP_ADDR" ] && IP_ADDR="127.0.0.1"
 
 echo -e "\n${GREEN}==================================================${NC}"
