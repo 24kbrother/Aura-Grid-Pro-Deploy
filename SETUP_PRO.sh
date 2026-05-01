@@ -203,7 +203,6 @@ services:
     image: ${IMAGE_URL}
     container_name: aura-grid-pro
     restart: always
-    env_file: .env
     environment:
       - NODE_ENV=production
       - PORT=8500
