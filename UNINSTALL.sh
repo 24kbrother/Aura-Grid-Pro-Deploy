@@ -10,10 +10,12 @@ YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-# 本项目专属 Docker 卷名称 (必须与 docker-compose.yml 一致)
+# 本项目专属 Docker 卷名称 (兼容 LITE 和 PRO)
 PROJECT_VOLUMES=(
     "aura-pro-db-data"
     "aura-pro-redis-data"
+    "aura-db-data"
+    "aura-redis-data"
 )
 
 # 兼容性：老用户可能使用的旧版卷名
@@ -35,9 +37,9 @@ else
 fi
 
 # 1. 停止并移除容器、网络及匿名卷
-echo -e "${GREEN}🛑 正在停止容器并移除网络...${NC}"
+echo -e "${GREEN}🛑 正在关停并移除 Aura Grid 容器组件...${NC}"
 
-# 尝试寻找 Compose 文件 (支持当前目录和 deploy 子目录)
+# 尝试寻找 Compose 文件
 COMPOSE_FILE=""
 for f in "docker-compose.prod.yml" "deploy/docker-compose.prod.yml" "docker-compose.yml" "deploy/docker-compose.yml"; do
     if [ -f "$f" ]; then
@@ -47,19 +49,34 @@ for f in "docker-compose.prod.yml" "deploy/docker-compose.prod.yml" "docker-comp
 done
 
 if [ -n "$COMPOSE_FILE" ]; then
-    echo -e "📄 找到配置文件: ${GREEN}$COMPOSE_FILE${NC}"
-    $DOCKER_COMPOSE -f "$COMPOSE_FILE" down --volumes --remove-orphans
-else
-    echo -e "${YELLOW}⚠️  未找到 docker-compose 配置文件，切换至容器名强制清理模式...${NC}"
-    # 强制清理可能的容器名 (针对已知项目名进行回退处理)
-    FORCE_TARGETS=("aura-grid-pro" "aura-redis-pro" "aura-grid-lite" "aura-redis-lite")
-    for container in "${FORCE_TARGETS[@]}"; do
-        if docker ps -a --format '{{.Names}}' | grep -q "^${container}$"; then
-            echo -e "🛑 正在强制停止并移除容器: ${YELLOW}${container}${NC}"
-            docker rm -f "$container" >/dev/null 2>&1
-        fi
-    done
+    echo -e "📄 命中配置文件: ${GREEN}$COMPOSE_FILE${NC}"
+    $DOCKER_COMPOSE -f "$COMPOSE_FILE" down --volumes --remove-orphans >/dev/null 2>&1
 fi
+
+# 硬核校验：确保没有任何残留容器（针对 Pro 命名规范）
+FORCE_TARGETS=("aura-grid-pro" "aura-redis-pro" "aura-grid-lite" "aura-redis-lite")
+for container in "${FORCE_TARGETS[@]}"; do
+    # 循环检查直到容器消失（最多尝试3次）
+    RETRY=0
+    while [ $(docker ps -a --format '{{.Names}}' | grep -w "$container" | wc -l) -gt 0 ] && [ $RETRY -lt 3 ]; do
+        echo -e "${YELLOW}⏳ 正在强制清理残留容器: ${container} (尝试 $RETRY)...${NC}"
+        docker rm -f "$container" >/dev/null 2>&1
+        ((RETRY++))
+        sleep 1
+    done
+
+    # 最终结果验证
+    if [ $(docker ps -a --format '{{.Names}}' | grep -w "$container" | wc -l) -gt 0 ]; then
+        echo -e "${RED}❌ 警告: 无法移除容器 ${container}，请手动执行 'docker rm -f ${container}'${NC}"
+    else
+        # 只有真正清理了才显示
+        if [ $RETRY -gt 0 ]; then
+            echo -e "${GREEN}✅ 容器 ${container} 已彻底彻底移除。${NC}"
+        fi
+    fi
+done
+
+echo -e "${GREEN}✨ 容器清理阶段完成。${NC}"
 
 # 2. 移除 Aura Grid 相关镜像
 echo -e "${GREEN}🧹 正在清理 Aura Grid 相关镜像...${NC}"
@@ -92,6 +109,13 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
     docker system prune -f 2>/dev/null
     echo -e "${GREEN}✅ 全局清理完成。${NC}"
 else
+    # 额外尝试清理孤儿匿名卷 (这些通常就是那些 Hex 哈希卷)
+    echo -e "${YELLOW}💡 是否要清理那些无名的“幽灵”数据卷 (即那些哈希值长串)？${NC}"
+    read -p "❓ 执行 'docker volume prune'？(y/N): " prune_vols
+    if [[ "$prune_vols" =~ ^[Yy]$ ]]; then
+        docker volume prune -f
+        echo -e "${GREEN}✅ 幽灵数据卷已清理。${NC}"
+    fi
     echo -e "${YELLOW}⏩ 已跳过全局清理，仅卸载了 Aura Grid 本身。${NC}"
 fi
 
