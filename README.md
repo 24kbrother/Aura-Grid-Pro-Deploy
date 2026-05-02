@@ -3,7 +3,7 @@
 # Aura Grid Pro - Next-Generation Smart Home Interaction Hub
 
 > **Extreme Performance · Premium Aesthetics · Industrial-Grade Reliability**
-> **Current Version**: v1.8.0-PRO
+> **Current Version**: v1.8.x-PRO
 
 Aura Grid Pro (Internal Code: **Shadow Smart Home**) is not just another dashboard for Home Assistant; it is a high-performance interaction core designed to decouple device connectivity from the user experience. Engineered for professionals and enthusiasts who demand zero-latency, aesthetic excellence, and robust security.
 
