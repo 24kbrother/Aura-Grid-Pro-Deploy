@@ -5,8 +5,6 @@
 # ══════════════════════════════════════════════════════════
 
 services:
-
-  # ─── Redis: Real-time state cache ─────────────────────
   redis:
     image: redis:7-alpine
     container_name: aura-redis-pro
@@ -17,9 +15,8 @@ services:
     networks:
       - aura-pro-internal
 
-  # ─── Shadow Home: Unified API + Frontend ─────────────────
   aura-grid:
-    image: ghcr.io/24kbrother/aura-grid-pro:v1.7.10-PRO
+    image: ghcr.io/24kbrother/aura-grid-pro:latest
     container_name: aura-grid-pro
     restart: unless-stopped
     environment:
@@ -33,8 +30,6 @@ services:
       - ./floorplans:/app/floorplans
       - ./icons:/app/icons
       - ./data:/app/data
-      - /var/run/docker.sock:/var/run/docker.sock # Required for Stealth Upgrade (Staff only)
-
     ports:
       - "8125:8500"
     networks:
@@ -42,12 +37,10 @@ services:
     depends_on:
       - redis
 
-# ─── Networks ─────────────────────────────────────────────
 networks:
   aura-pro-internal:
     driver: bridge
 
-# ─── Volumes ──────────────────────────────────────────────
 volumes:
   redis_data:
     name: aura-pro-redis-data
