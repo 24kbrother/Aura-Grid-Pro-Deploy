@@ -36,7 +36,24 @@ fi
 echo -e "\033[34m[2/4] 正在登录私有仓库 (GHCR)...\033[0m"
 echo "$TOKEN" | docker login ghcr.io -u 24kbrother --password-stdin
 
-echo -e "\033[34m[3/4] 正在生成配置文件 (docker-compose.yml)...\033[0m"
+echo -e "\033[34m[3/4] 正在准备环境并生成配置文件 (docker-compose.yml)...\033[0m"
+WORKDIR=$(pwd)
+mkdir -p "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
+chmod -R 777 "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
+
+# --- 虚拟硬件指纹逻辑 (与 SETUP_PRO.sh 保持绝对一致) ---
+HWID_FILE="$WORKDIR/data/device.id"
+if [ ! -f "$HWID_FILE" ]; then
+    if [ -f /proc/sys/kernel/random/uuid ]; then
+        NEW_HWID=$(cat /proc/sys/kernel/random/uuid)
+    elif command -v uuidgen &>/dev/null; then
+        NEW_HWID=$(uuidgen)
+    else
+        NEW_HWID=$(od -x /dev/urandom | head -n 1 | awk '{print $2$3"-"$4"-"$5"-"$6"-"$7$8$9}')
+    fi
+    echo "$NEW_HWID" > "$HWID_FILE"
+fi
+
 cat > docker-compose.yml <<EOF
 # Aura Grid Pro - Production Compose (Generated)
 services:
@@ -65,6 +82,7 @@ services:
       - ./floorplans:/app/floorplans
       - ./icons:/app/icons
       - ./data:/app/data
+      - ./data/device.id:/etc/machine-id:ro
     ports:
       - "8125:8500"
     networks:
