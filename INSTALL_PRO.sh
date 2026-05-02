@@ -43,6 +43,13 @@ chmod -R 777 "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
 
 # --- 虚拟硬件指纹逻辑 (与 SETUP_PRO.sh 保持绝对一致) ---
 HWID_FILE="$WORKDIR/data/device.id"
+
+# 防坑逻辑：如果 device.id 是个文件夹（Docker 误创），先删掉它
+if [ -d "$HWID_FILE" ]; then
+    echo -e "\033[33m检测到 device.id 为文件夹格式，正在修复...\033[0m"
+    rm -rf "$HWID_FILE"
+fi
+
 if [ ! -f "$HWID_FILE" ]; then
     if [ -f /proc/sys/kernel/random/uuid ]; then
         NEW_HWID=$(cat /proc/sys/kernel/random/uuid)
