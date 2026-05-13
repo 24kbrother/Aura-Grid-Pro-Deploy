@@ -69,7 +69,7 @@ if [ -f "$COMPOSE_FILE" ]; then
 fi
 
 # 6. 执行镜像更新
-if docker compose pull && docker compose up -d --remove-orphans; then
+if docker compose -p aura-grid-pro pull && docker compose -p aura-grid-pro up -d --remove-orphans; then
     echo -e "\n\033[0;32m[SUCCESS] Aura Grid Pro 生产镜像已顺利升级完成。\033[0m"
     
     # 7. 清理并销毁临时文件
