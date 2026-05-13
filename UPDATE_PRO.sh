@@ -59,6 +59,11 @@ else
     exit 1
 fi
 
+# 4.5 确保物理挂载目录存在 (解决群晖等系统 bind mount 失败问题)
+echo -e "\033[1;34m[*] 正在检查物理目录完整性...\033[0m"
+mkdir -p ./data ./floorplans ./icons
+chmod -R 777 ./data ./floorplans ./icons 2>/dev/null || true
+
 # 5. 自动探测并升级 docker-compose.yml 镜像标签
 COMPOSE_FILE="docker-compose.yml"
 if [ -f "$COMPOSE_FILE" ]; then
