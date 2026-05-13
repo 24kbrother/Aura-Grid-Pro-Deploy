@@ -43,9 +43,10 @@ if [ -n "$PROXY_URL" ]; then
     echo -e "[INFO] 临时网络代理配置成功。"
 fi
 
-# 3. 指纹防丢失保护
-if [ -f "./data/device.id" ]; then
-    cp ./data/device.id ./device.id.bak
+# 3. 授权身份防丢失保护 (HWID + JWT)
+if [ -d "./data" ]; then
+    [ -f "./data/device.id" ] && cp ./data/device.id ./device.id.bak
+    [ -f "./data/license.jwt" ] && cp ./data/license.jwt ./license.jwt.bak
 fi
 
 # 4. 私有镜像鉴权
@@ -77,15 +78,13 @@ fi
 if docker compose -p aura-grid-pro pull && docker compose -p aura-grid-pro up -d --remove-orphans; then
     echo -e "\n\033[0;32m[SUCCESS] Aura Grid Pro 生产镜像已顺利升级完成。\033[0m"
     
-    # 7. 清理并销毁临时文件
-    if [ -f "./device.id.bak" ]; then
-        mv ./device.id.bak ./data/device.id
-    fi
+    # 7. 还原身份并销毁临时文件
+    [ -f "./device.id.bak" ] && mv ./device.id.bak ./data/device.id
+    [ -f "./license.jwt.bak" ] && mv ./license.jwt.bak ./data/license.jwt
     [ -f "${COMPOSE_FILE}.original" ] && rm -f "${COMPOSE_FILE}.original"
 else
-    echo -e "\033[0;31m[ERROR] 升级过程中断，正在为您紧急恢复指纹保护层...\033[0m"
-    if [ -f "./device.id.bak" ]; then
-         mv ./device.id.bak ./data/device.id
-    fi
+    echo -e "\033[0;31m[ERROR] 升级过程中断，正在为您紧急恢复身份保护层...\033[0m"
+    [ -f "./device.id.bak" ] && mv ./device.id.bak ./data/device.id
+    [ -f "./license.jwt.bak" ] && mv ./license.jwt.bak ./data/license.jwt
     exit 1
 fi
