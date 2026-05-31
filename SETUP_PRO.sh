@@ -1,28 +1,21 @@
 #!/bin/bash
-
 # =================================================================
 # 👑 Aura Grid Pro 生产环境多态一键安装/升级程序 (2026 坚不可摧版)
 # 支持：
 #   1. 检测到 Lite 全自动安全热升级 (无损继承)
 #   2. 从未安装 Lite 的全新正版首装
 # =================================================================
-
 # 预设参数
 FIXED_USER="24kservice"
-INPUT_TOKEN=$1
 VERSION="latest"
 IMAGE_URL="ghcr.io/24kbrother/aura-grid-pro:${VERSION}"
-
-
 set -e
-
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
-
 # --- 0. 权限与 NAS 命令行降级防御 ---
 DOCKER_CMD="docker"
 if [ "$EUID" -ne 0 ]; then
@@ -30,7 +23,6 @@ if [ "$EUID" -ne 0 ]; then
         DOCKER_CMD="sudo docker"
     fi
 fi
-
 # 兼容老旧版本 Docker 的 docker-compose/docker compose 判定
 COMPOSE_CMD="$DOCKER_CMD compose"
 if ! $DOCKER_CMD compose version &>/dev/null; then
@@ -41,7 +33,6 @@ if ! $DOCKER_CMD compose version &>/dev/null; then
         exit 1
     fi
 fi
-
 ask_input() {
     local prompt=$1
     local is_secret=$2
@@ -53,11 +44,9 @@ ask_input() {
     fi
     echo "$val"
 }
-
 echo -e "${BLUE}==================================================${NC}"
 echo -e "🏗️  ${GREEN}正在启动 Aura Grid Pro 交付管理程序${NC}"
 echo -e "${BLUE}==================================================${NC}"
-
 # --- 0.2 前置确认与商业服务漏斗 ---
 echo -e "\n  ┌────────────────────────────────────────────────────────┐"
 echo -e "  │         ${YELLOW}欢迎使用 AURA Grid Pro 专业版部署向导${NC}            │"
@@ -70,15 +59,11 @@ echo -e "     1. 遇到网络拥堵、端口冲突等环境报错 —— 强烈�
 echo -e "     2. 希望省心省力、尊享无忧的专业调试 —— 我们随时提供 ${GREEN}【官方 1对1 高级专家部署服务】${NC}。"
 echo -e " ----------------------------------------------------------------------------------"
 read -p "$(echo -e "  ${YELLOW}🤝 极客精神，始于探索。请在了解安装须知后确认开始我们的自动化部署工作？(Y 继续 / N 退出并寻求帮助): ${NC}")" CONFIRM_START < /dev/tty
-
 if [[ ! "$CONFIRM_START" =~ ^[Yy]$ ]]; then
     echo -e "\n  ${RED}已安全退出。如需官方一对一高级专家部署协助，请联系微信: china_24kbro 或 邮件: 24k.brother@gmail.com${NC}\n"
     exit 0
 fi
-
 echo -e "  ${GREEN}✨ 确认成功，正在为您点火启动...${NC}\n"
-
-
 # --- 0.5 临时网络代理加速（可选） ---
 echo -e "\n🌐 代理加速配置 (直接回车可跳过)："
 read -p "$(echo -e "${YELLOW}国内环境拉取若较慢，请输入代理服务器地址 (例如 http://127.0.0.1:7890): ${NC}")" PROXY_URL < /dev/tty
@@ -89,31 +74,24 @@ if [ -n "$PROXY_URL" ]; then
     export HTTPS_PROXY="$PROXY_URL"
     echo -e "${GREEN}✅ 已为当前安装流载入临时网络代理。${NC}\n"
 fi
-
-
 # --- 1. 部署通道校验 ---
 echo -e "\n正在启动公共镜像部署..."
-
 # --- 2. 状态嗅探与环境动态决策 ---
 echo -e "\n🔍 正在进行系统环境拓扑扫描..."
-
 # A. 嗅探是否有 Lite 正在运行，并拔出其真实的宿主机挂载目录
 LITE_CONTAINER=$($DOCKER_CMD ps -q -f name=aura-grid)
 LITE_DIR=""
-
 if [ -n "$LITE_CONTAINER" ]; then
     LITE_PHYSICAL_PATH=$($DOCKER_CMD inspect --format='{{range .Mounts}}{{if eq .Destination "/app/data"}}{{.Source}}{{end}}{{end}}' "$LITE_CONTAINER" 2>/dev/null || true)
     if [ -n "$LITE_PHYSICAL_PATH" ]; then
         LITE_DIR=$(dirname "$LITE_PHYSICAL_PATH")
     fi
 fi
-
 if [ -z "$LITE_DIR" ] && [ -f "./docker-compose.yml" ]; then
     if grep -q 'ghcr.io/24kbrother/aura-grid:' ./docker-compose.yml 2>/dev/null; then
         LITE_DIR=$(pwd)
     fi
 fi
-
 if [ -n "$LITE_DIR" ] && [ -d "$LITE_DIR" ]; then
     echo -e "╔══════════════════════════════════════════════════════╗"
     echo -e "║        ⚡   检测到 AURA-LITE 版历史痕迹！          ║"
@@ -124,14 +102,11 @@ if [ -n "$LITE_DIR" ] && [ -d "$LITE_DIR" ]; then
     echo -e "  ✨ 设备指纹完美继承，绝不触发 30 天封锁死锁。"
     echo -e " --------------------------------------------------------"
     read -p "$(echo -e "  按 ${YELLOW}任意键${NC} 开启无缝跨代升级，或 Ctrl+C 退出：") " </dev/tty
-
     cd "$LITE_DIR"
     WORKDIR=$(pwd)
-
     echo -e "${YELLOW}⚙️  正在停止并解耦 LITE 容器实例...${NC}"
     $DOCKER_CMD stop aura-grid aura-redis 2>/dev/null || true
     $DOCKER_CMD rm   aura-grid aura-redis 2>/dev/null || true
-
     if $DOCKER_CMD volume inspect aura-db-data &>/dev/null; then
         echo -e "${YELLOW}📦 正在为您的历史配置建立独立迁移...${NC}"
         mkdir -p ./data
@@ -149,13 +124,9 @@ else
     echo -e "${GREEN}✨ 未检测到历史安装，当前将开启【PRO 专属正版首装】模式。${NC}"
     echo -e "📂 本次服务将被安全安装在物理路径: ${BLUE}${WORKDIR}${NC}"
 fi
-
-
-
 # --- 3. 部署统一配置准备 ---
 mkdir -p "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
 chmod -R 777 "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
-
 HWID_FILE="$WORKDIR/data/device.id"
 if [ ! -f "$HWID_FILE" ]; then
     # 多级 UUID 物理兼容回退
@@ -168,12 +139,10 @@ if [ ! -f "$HWID_FILE" ]; then
     fi
     echo "$NEW_HWID" > "$HWID_FILE"
 fi
-
 cat <<EOF > "$WORKDIR/.env"
 GHCR_USER=$FIXED_USER
 DEPLOY_PATH=$WORKDIR
 EOF
-
 # --- 4. 生成 PRO 版一致性编排文件 ---
 cat <<EOF > "$WORKDIR/docker-compose.yml"
 services:
@@ -199,7 +168,6 @@ services:
       - aura-net
     depends_on:
       - redis
-
   redis:
     image: redis:7-alpine
     container_name: aura-redis-pro
@@ -209,23 +177,18 @@ services:
       - redis_pro_data:/data
     networks:
       - aura-net
-
 networks:
   aura-net:
     driver: bridge
-
 volumes:
   redis_pro_data:
     name: aura-redis-pro-data
 EOF
-
 # --- 5. 执行一键启动 ---
 echo -e "\n🚀 正在拉取最新的 PRO 黄金镜像..."
 $COMPOSE_CMD pull
-
 echo -e "🚀 正在启动 Aura Grid Pro 服务组..."
 $COMPOSE_CMD up -d
-
 cat <<EOF > "$WORKDIR/UPDATE_PRO.sh"
 #!/bin/bash
 echo "正在执行 Aura Grid Pro 无损更新..."
@@ -237,14 +200,12 @@ fi
 echo "✅ 更新完成！"
 EOF
 chmod +x "$WORKDIR/UPDATE_PRO.sh"
-
 # 优雅多端 IP 获取 (兼容纯净版 BusyBox grep)
 IP_ADDR=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}')
 if [ -z "$IP_ADDR" ]; then
     IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}')
 fi
 [ -z "$IP_ADDR" ] && IP_ADDR="127.0.0.1"
-
 echo -e "\n${GREEN}==================================================${NC}"
 echo -e "🎉 Aura Grid Pro 部署交接成功！"
 echo -e "--------------------------------------------------"
