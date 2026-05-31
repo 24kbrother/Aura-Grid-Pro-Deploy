@@ -3,8 +3,11 @@
 #  Run with: docker-compose up -d
 #  All config via .env file (copy from .env.example)
 # ══════════════════════════════════════════════════════════
+name: aura-grid-pro
 
 services:
+
+  # ─── Redis: Real-time state cache ─────────────────────
   redis:
     image: redis:7-alpine
     container_name: aura-redis-pro
@@ -15,6 +18,7 @@ services:
     networks:
       - aura-pro-internal
 
+  # ─── Shadow Home: Unified API + Frontend ─────────────────
   aura-grid:
     image: ghcr.io/24kbrother/aura-grid-pro:latest
     container_name: aura-grid-pro
@@ -30,6 +34,8 @@ services:
       - ./floorplans:/app/floorplans
       - ./icons:/app/icons
       - ./data:/app/data
+      - /etc/machine-id:/etc/machine-id:ro
+
     ports:
       - "8125:8500"
     networks:
@@ -37,10 +43,12 @@ services:
     depends_on:
       - redis
 
+# ─── Networks ─────────────────────────────────────────────
 networks:
   aura-pro-internal:
     driver: bridge
 
+# ─── Volumes ──────────────────────────────────────────────
 volumes:
   redis_data:
     name: aura-pro-redis-data

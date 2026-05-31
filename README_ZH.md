@@ -2,10 +2,17 @@
 
 # Aura Grid Pro - 商业级智能家居交互中台
 
+[![Version](https://img.shields.io/badge/version-v1.8.6--PRO-blue.svg?style=flat-shadow)](https://github.com/24kbrother/Aura-Grid-Pro-Deploy)
+[![License](https://img.shields.io/badge/license-Commercial-red.svg?style=flat-shadow)](https://vlanhub.com/buy)
+[![Status](https://img.shields.io/badge/status-Production--Ready-green.svg?style=flat-shadow)](https://vlanhub.com/buy)
+
 > **极致性能 · 高级审美 · 工业级可靠性的核心中控**
-> **当前版本**: v1.8.x-PRO
+> **当前版本**: v1.8.6-PRO
 
 Aura Grid Pro (商业版代号 **Shadow Smart Home**) 是一个独立的高性能交互内核。它通过将设备接入层与交互层彻底解耦，为追求零延迟、顶级审美和工业级安全性的专业项目与高端极客而生。
+
+> [!NOTE]
+> **重要更新**：自 `v1.8.6-PRO` 起，PRO 黄金镜像已正式迁移至 **公开免密镜像仓库**（`ghcr.io/24kbrother/aura-grid-pro`）。拉取和升级不再需要配置任何私有 GitHub Token，彻底摆脱 `docker login` 限制，实现秒级无损更新！
 
 ---
 
@@ -31,7 +38,7 @@ Aura Grid Pro (商业版代号 **Shadow Smart Home**) 是一个独立的高性�
 Aura Grid Pro 采用金镜像打包，完美兼容 AMD64 与 ARM64 架构。
 
 ### 一键部署与无损升级
-执行以下统一脚本，系统会自动识别当前环境，执行全新安装或保留配置的无损升级。
+执行以下统一脚本，系统会自动识别当前环境，执行全新安装或保留配置 of 无损升级。
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/main/SETUP_PRO.sh | bash

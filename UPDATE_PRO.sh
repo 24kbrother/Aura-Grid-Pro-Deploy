@@ -3,14 +3,7 @@
 # Aura Grid Pro 生产环境无损管道升级脚本
 # =================================================================
 
-GH_TOKEN=$1
-
-# 1. 鉴权校验
-if [ -z "$GH_TOKEN" ]; then
-    echo -e "\033[0;31m[ERROR] 缺少必要的专属升级 Token，操作被拒绝。\033[0m"
-    echo -e "\033[0;33m[TIP] 请在大屏前端面板点击“获取专属升级指令”以包含临时令牌。\033[0m"
-    exit 1
-fi
+# 1. 升级准备
 
 echo -e "\033[0;34m==============================================================\033[0m"
 echo -e "\033[1;36m         欢迎使用 Aura Grid Pro VIP专属云端自动更新系统          \033[0m"
@@ -49,16 +42,8 @@ if [ -d "./data" ]; then
     [ -f "./data/license.jwt" ] && cp ./data/license.jwt ./license.jwt.bak
 fi
 
-# 4. 私有镜像鉴权
-echo -e "\n\033[1;34m[*] 正在验证私有仓库拉取权限...\033[0m"
-FIXED_USER="24kservice"
-if echo "$GH_TOKEN" | docker login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
-    echo -e "\033[0;32m[+] 鉴权通过，成功接入云端仓库。\033[0m"
-else
-    echo -e "\033[0;31m[-] 鉴权失败：Token 无效或已过期，请重新获取。\033[0m"
-    [ -f "./device.id.bak" ] && rm -f ./device.id.bak
-    exit 1
-fi
+# 4. 镜像拉取准备
+echo -e "\n\033[1;34m[*] 正在接入云端公共镜像仓库...\033[0m"
 
 # 4.5 确保物理挂载目录存在 (解决群晖等系统 bind mount 失败问题)
 echo -e "\033[1;34m[*] 正在检查物理目录完整性...\033[0m"

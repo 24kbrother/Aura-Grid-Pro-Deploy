@@ -2,20 +2,11 @@
 
 # ══════════════════════════════════════════════════════════
 #  Aura Grid Pro - Manual Installation Script
-#  Usage: curl -sSL ... | bash -s -- <token>
 # ══════════════════════════════════════════════════════════
 
 set -e
 
-TOKEN=$1
-
-if [ -z "$TOKEN" ]; then
-    echo -e "\033[31m错误: 未提供拉取授权 Token。\033[0m"
-    echo "使用方法: bash INSTALL_PRO.sh <token>"
-    exit 1
-fi
-
-echo -e "\033[34m[1/4] 环境预检查...\033[0m"
+echo -e "\033[34m[1/3] 环境预检查...\033[0m"
 if ! command -v docker &> /dev/null; then
     echo "未检测到 Docker，请先安装 Docker。"
     exit 1
@@ -33,10 +24,7 @@ if [ "$NEED_PROXY" == "y" ]; then
     echo "代理已设置: $PROXY_ADDR"
 fi
 
-echo -e "\033[34m[2/4] 正在登录私有仓库 (GHCR)...\033[0m"
-echo "$TOKEN" | docker login ghcr.io -u 24kbrother --password-stdin
-
-echo -e "\033[34m[3/4] 正在准备环境并生成配置文件 (docker-compose.yml)...\033[0m"
+echo -e "\033[34m[2/3] 正在准备环境并生成配置文件 (docker-compose.yml)...\033[0m"
 WORKDIR=$(pwd)
 mkdir -p "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
 chmod -R 777 "$WORKDIR/data" "$WORKDIR/floorplans" "$WORKDIR/icons"
@@ -108,7 +96,7 @@ volumes:
     name: aura-pro-db-data
 EOF
 
-echo -e "\033[34m[4/4] 正在拉取镜像并启动服务...\033[0m"
+echo -e "\033[34m[3/3] 正在拉取镜像并启动服务...\033[0m"
 docker compose pull
 docker compose up -d
 

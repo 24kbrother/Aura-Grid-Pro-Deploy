@@ -2,10 +2,17 @@
 
 # Aura Grid Pro - Next-Generation Smart Home Interaction Hub
 
+[![Version](https://img.shields.io/badge/version-v1.8.6--PRO-blue.svg?style=flat-shadow)](https://github.com/24kbrother/Aura-Grid-Pro-Deploy)
+[![License](https://img.shields.io/badge/license-Commercial-red.svg?style=flat-shadow)](https://vlanhub.com/buy)
+[![Status](https://img.shields.io/badge/status-Production--Ready-green.svg?style=flat-shadow)](https://vlanhub.com/buy)
+
 > **Extreme Performance · Premium Aesthetics · Industrial-Grade Reliability**
-> **Current Version**: v1.8.x-PRO
+> **Current Version**: v1.8.6-PRO
 
 Aura Grid Pro (Internal Code: **Shadow Smart Home**) is not just another dashboard for Home Assistant; it is a high-performance interaction core designed to decouple device connectivity from the user experience. Engineered for professionals and enthusiasts who demand zero-latency, aesthetic excellence, and robust security.
+
+> [!NOTE]
+> **Important Update**: Starting from `v1.8.6-PRO`, the PRO Golden Image has migrated to a **public registry** (`ghcr.io/24kbrother/aura-grid-pro`). Pulling and upgrading no longer requires a private GitHub Personal Access Token (PAT). Enjoy seamless, tokenless, one-command updates!
 
 ---
 

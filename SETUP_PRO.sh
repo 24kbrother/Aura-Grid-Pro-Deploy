@@ -91,30 +91,8 @@ if [ -n "$PROXY_URL" ]; then
 fi
 
 
-# --- 1. GHCR 登录校验 ---
-echo -e "\n🔑 正在配置私有镜像访问权限..."
-while true; do
-    GH_TOKEN=${INPUT_TOKEN:-$(ask_input "请输入项目专属部署 Token: " "true")}
-    [ -z "$INPUT_TOKEN" ] && echo ""
-
-    if [ -z "$GH_TOKEN" ]; then
-        echo -e "${RED}错误：Token 不能为空。${NC}"
-        [ -n "$INPUT_TOKEN" ] && exit 1
-        continue
-    fi
-
-    echo "正在校验云端部署授权..."
-    if echo "$GH_TOKEN" | $DOCKER_CMD login ghcr.io -u "$FIXED_USER" --password-stdin &>/dev/null; then
-        echo -e "${GREEN}✅ 授权校验通过 (User: $FIXED_USER)${NC}"
-        break
-    else
-        echo -e "${RED}❌ 授权失败！Token 可能无效或已过期。${NC}"
-        if [ -n "$INPUT_TOKEN" ]; then
-            exit 1
-        fi
-        continue
-    fi
-done
+# --- 1. 部署通道校验 ---
+echo -e "\n正在启动公共镜像部署..."
 
 # --- 2. 状态嗅探与环境动态决策 ---
 echo -e "\n🔍 正在进行系统环境拓扑扫描..."
@@ -203,6 +181,7 @@ services:
     image: ${IMAGE_URL}
     container_name: aura-grid-pro
     restart: always
+    env_file: .env
     environment:
       - NODE_ENV=production
       - PORT=8500
@@ -251,10 +230,8 @@ cat <<EOF > "$WORKDIR/UPDATE_PRO.sh"
 #!/bin/bash
 echo "正在执行 Aura Grid Pro 无损更新..."
 if command -v sudo &>/dev/null; then
-    sudo docker login ghcr.io -u "$FIXED_USER" -p "$GH_TOKEN" &>/dev/null
     sudo docker compose pull && sudo docker compose up -d --remove-orphans
 else
-    docker login ghcr.io -u "$FIXED_USER" -p "$GH_TOKEN" &>/dev/null
     docker compose pull && docker compose up -d --remove-orphans
 fi
 echo "✅ 更新完成！"
