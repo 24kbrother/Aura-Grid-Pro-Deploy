@@ -16,24 +16,26 @@
 
 ---
 
-## 🚀 One-Click Installation & Lossless Upgrade
+## 🚀 Quick Start & Maintenance
 
-Deploy or non-destructively upgrade Aura Grid Pro on your host server (Synology NAS, PVE, Unraid, Linux server, etc.) with a single command:
+Deploy, migrate, or upgrade Aura Grid Pro with intelligent radar self-navigation:
 
-### ⚡ Accelerated Domestic Channel (Aliyun ACR)
+### 1️⃣ Fresh Install / Cross-Version Migration (Lite ➔ Pro)
+Run the smart installation radar (with automatic NAS storage pool detection, mirror selector, Host/Bridge networking, and seamless Lite-to-Pro database/HWID inheritance):
 ```bash
-curl -sSL http://auragrid.cn/PULL_PRO_FORM_ALIYUN.sh | bash
-```
-
-### 🌐 Official Global Channel (Full Installation & Upgrade)
-```bash
+# Recommended Domestic / Global Auto-Mirror
 curl -sSL http://auragrid.cn/PRO.sh | bash
+
+# Or via GitHub Raw
+curl -fsSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/main/SETUP_PRO.sh | bash
 ```
 
-> Fallback GitHub Endpoint:
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/24kbrother/Aura-Grid-Pro-Deploy/main/SETUP_PRO.sh | bash
-> ```
+### 2️⃣ Fast In-Place Update (Zero-Prompt / Radar Auto-Pathfinding)
+For existing installations, run the zero-interaction update script from **any directory** (automatically detects physical path, pulls via accelerated Aliyun ACR, restarts in-place, and frees disk space):
+```bash
+curl -sSL http://auragrid.cn/UPDATE_PRO.sh | bash
+```
+> Or directly inside your deployment folder: `bash ./UPDATE_PRO.sh`
 
 ---
 
