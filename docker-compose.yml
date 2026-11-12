@@ -29,6 +29,7 @@ services:
       REDIS_URL: redis://redis:6379
       DATABASE_URL: file:/app/prisma/data/prod.db
       FLOORPLANS_DIR: /app/floorplans
+      JWT_SECRET: ${JWT_SECRET:-shadow-super-secret-key-phase2-secure-pro-random-2026}
     volumes:
       - db_data:/app/prisma/data
       - ./floorplans:/app/floorplans

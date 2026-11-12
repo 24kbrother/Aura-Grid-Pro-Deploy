@@ -215,7 +215,18 @@ fi
 
 # 3. 智能分流与 PRO 任意目录自感知无缝升级
 if [ "$IS_VALID_EXISTING_PRO" = "true" ]; then
-    PRO_STATUS=$($DOCKER_CMD inspect -f '{{.State.Status}}' "$EXISTING_PRO_CONTAINER" 2>/dev/null || echo "running")
+    if [ -n "$EXISTING_PRO_CONTAINER" ]; then
+        RAW_PRO_STATUS=$($DOCKER_CMD inspect -f '{{.State.Status}}' "$EXISTING_PRO_CONTAINER" 2>/dev/null || true)
+        case "$RAW_PRO_STATUS" in
+            running)    PRO_STATUS="运行中 (running)" ;;
+            exited)     PRO_STATUS="已停止 (exited)" ;;
+            paused)     PRO_STATUS="已暂停 (paused)" ;;
+            restarting) PRO_STATUS="重启中 (restarting)" ;;
+            *)          PRO_STATUS="${RAW_PRO_STATUS:-未知 (unknown)}" ;;
+        esac
+    else
+        PRO_STATUS="未运行 (未检测到运行容器)"
+    fi
     print_msg "${GREEN}[+] 雷达探测到宿主机已部署 Aura Grid Pro 实例！${NC}"
     print_msg "  • 物理安装目录: ${BLUE}${EXISTING_PRO_DIR}${NC}"
     print_msg "  • 容器当前状态: ${CYAN}${PRO_STATUS}${NC}"
@@ -426,6 +437,9 @@ fi
 # 8. 根据网络模式动态生成 PRO 统一 Docker Compose 编排文件
 print_msg "${BLUE}[*] 正在生成 Docker Compose 编排文件...${NC}"
 
+# 动态生成新实例专属 32 位安全 JWT_SECRET（安全加固 SEC-01，杜绝共享弱口令）
+PRO_JWT_SECRET=$(openssl rand -hex 20 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32 || echo "aura-pro-sec-$(date +%s)-$RANDOM")
+
 if [ "$NET_CHOICE" = "1" ]; then
     # 【模式 1】Host 直通模式 (推荐: mDNS 毫秒级广播探活 + 127.0.0.1 Redis 保护)
     cat <<EOF > "$WORKDIR/docker-compose.yml"
@@ -453,6 +467,7 @@ services:
       - REDIS_URL=redis://127.0.0.1:6379
       - DATABASE_URL=file:/app/prisma/data/prod.db
       - FLOORPLANS_DIR=/app/floorplans
+      - JWT_SECRET=${PRO_JWT_SECRET}
     volumes:
       - ./data:/app/prisma/data
       - ./floorplans:/app/floorplans
@@ -493,6 +508,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - DATABASE_URL=file:/app/prisma/data/prod.db
       - FLOORPLANS_DIR=/app/floorplans
+      - JWT_SECRET=${PRO_JWT_SECRET}
     ports:
       - "8125:8500"
     volumes:
