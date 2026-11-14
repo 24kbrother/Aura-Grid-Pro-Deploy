@@ -1,0 +1,4 @@
+configuration:
+  license_key:
+    name: "License Key"
+    description: "Optional. Enter your 16-character license key (e.g. AURA-PRO-XXXX-XXXX-XXXX-XXXX). The add-on will automatically activate on startup and preserve activation across updates. Masked as password by default."

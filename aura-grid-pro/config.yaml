@@ -1,7 +1,7 @@
 name: "Aura Grid Pro"
 description: "Aura Grid Pro 工业级全屋智能数字孪生控制中枢 (HAOS 专属内测版)"
 slug: "aura_grid_pro"
-version: "1.9.18-pro.4"
+version: "1.9.18-pro.5"
 image: "ghcr.io/24kbrother/aura-grid-pro"
 init: false
 arch:
@@ -22,6 +22,14 @@ ports:
   8500/tcp: 8125
 ports_description:
   8500/tcp: "Aura Grid 局域网访问与 App 直连端口 (默认 8125，冲突可自由修改)"
+
+# 用户配置预设
+options:
+  license_key: ""
+
+# 配置架构 (password? 开启原生密码圆点脱敏遮罩与小眼睛明密文切换)
+schema:
+  license_key: "password?"
 
 # Supervisor Watchdog 健康检查 (绑定原生 /health)
 watchdog: "http://[HOST]:[PORT:8500]/health"

@@ -1,0 +1,4 @@
+configuration:
+  license_key:
+    name: "商业授权码"
+    description: "可选。在此填入购买的正版授权码（例如 AURA-PRO-XXXX-XXXX-XXXX-XXXX）。保存后加载项在启动时将自动联网激活，并在版本更新后永久自动继承。输入后默认密文遮罩，可点击右侧眼睛切换明文。"
