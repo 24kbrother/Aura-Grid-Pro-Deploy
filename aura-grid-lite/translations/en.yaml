@@ -1,3 +1,0 @@
-configuration: {}
-network:
-  8500/tcp: "Aura Grid Lite LAN access and App direct connection port (Default 8125, configurable)"
