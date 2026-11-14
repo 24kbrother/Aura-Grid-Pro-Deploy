@@ -1,7 +1,7 @@
 name: "Aura Grid Pro"
 description: "Aura Grid Pro 工业级全屋智能数字孪生控制中枢 (HAOS 专属内测版)"
 slug: "aura_grid_pro"
-version: "1.9.18-pro.5"
+version: "1.9.18-pro.6"
 image: "ghcr.io/24kbrother/aura-grid-pro"
 init: false
 arch:
