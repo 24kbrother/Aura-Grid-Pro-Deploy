@@ -1,0 +1,33 @@
+name: "Aura Grid Pro"
+description: "Aura Grid Pro 工业级全屋智能数字孪生控制中枢 (HAOS 专属内测版)"
+slug: "aura_grid_pro"
+version: "1.9.18-pro.1"
+image: "ghcr.io/24kbrother/aura-grid-pro"
+init: false
+arch:
+  - aarch64
+  - amd64
+startup: services
+boot: auto
+
+# 网络与 Ingress 架构 (桥接网络隔离，固定 8500 端口，Supervisor 动态代理)
+host_network: false
+ingress: true
+ingress_port: 8500
+panel_icon: "mdi:cube-scan"
+panel_title: "Aura Grid"
+
+# Supervisor Watchdog 健康检查 (绑定原生 /health)
+watchdog: "http://[HOST]:[PORT:8500]/health"
+
+# 最小特权安全基线
+homeassistant_api: false
+hassio_api: false
+
+# 环境变量显式注入
+environment:
+  HA_APP_MODE: "true"
+  NODE_ENV: "production"
+  PORT: "8500"
+  REDIS_URL: "redis://127.0.0.1:6379"
+  DATABASE_URL: "file:/data/prod.db"
