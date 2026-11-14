@@ -1,7 +1,7 @@
 name: "Aura Grid Pro"
 description: "Aura Grid Pro 工业级全屋智能数字孪生控制中枢 (HAOS 专属内测版)"
 slug: "aura_grid_pro"
-version: "1.9.18-pro.3"
+version: "1.9.18-pro.4"
 image: "ghcr.io/24kbrother/aura-grid-pro"
 init: false
 arch:
@@ -10,12 +10,18 @@ arch:
 startup: services
 boot: auto
 
-# 网络与 Ingress 架构 (桥接网络隔离，固定 8500 端口，Supervisor 动态代理)
+# 网络与 Ingress 架构 (桥接隔离，同时支持 Ingress 与 局域网宿主端口直连)
 host_network: false
 ingress: true
 ingress_port: 8500
 panel_icon: "mdi:cube-scan"
 panel_title: "Aura Grid"
+
+# 局域网访问与 App 直连端口 (默认 8125，用户可在 HA「配置」面板自由自定义)
+ports:
+  8500/tcp: 8125
+ports_description:
+  8500/tcp: "Aura Grid 局域网访问与 App 直连端口 (默认 8125，冲突可自由修改)"
 
 # Supervisor Watchdog 健康检查 (绑定原生 /health)
 watchdog: "http://[HOST]:[PORT:8500]/health"
