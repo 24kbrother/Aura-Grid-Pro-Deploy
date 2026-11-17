@@ -153,6 +153,133 @@ if $COMPOSE_CMD up -d; then
     $DOCKER_CMD image prune -f >/dev/null 2>&1 || true
     print_msg "${GREEN}[SUCCESS] 磁盘空间已自动优化清理完毕！${NC}"
 
+    # 6. 同步就地刷新/固化本地专属更新脚本 UPDATE_PRO.sh 为官方最新版本 (原子替换，杜绝执行期自身截断)
+    print_msg "${BLUE}[*] 正在同步就地刷新本地专属更新脚本 UPDATE_PRO.sh 为最新版本...${NC}"
+    TMP_UPDATER="$TARGET_DIR/.UPDATE_PRO.sh.tmp.$$"
+    cat <<'EOF_LOCAL_UPDATER' > "$TMP_UPDATER"
+#!/bin/bash
+# =================================================================
+# Aura Grid Pro — 本地专属一键无损更新工具
+# 国内网络环境强烈推荐使用本脚本更新，秒级拉取极速完成
+# 特性: 权限自适应适配、双轨雷达自寻径、数据与授权零风险无损热升级
+# =================================================================
+
+# 自动 Shell 提升
+if [ -z "$BASH_VERSION" ]; then
+    if command -v bash >/dev/null 2>&1 && [ -f "$0" ]; then
+        exec bash "$0" "$@"
+    fi
+fi
+
+set -e
+
+# 颜色定义
+BLUE='\033[1;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+print_msg() {
+    printf "%b\n" "$1"
+}
+
+ALIYUN_IMAGE="crpi-z60uur6y0xgl3fgs.cn-chengdu.personal.cr.aliyuncs.com/aura-grid/aura-grid-pro:latest"
+GHCR_IMAGE="ghcr.io/24kbrother/aura-grid-pro:latest"
+
+print_msg "${BLUE}==============================================================${NC}"
+print_msg "${GREEN}        Aura Grid Pro VIP 专属极速无损自动更新程序             ${NC}"
+print_msg "${BLUE}==============================================================${NC}"
+
+# 0. 环境检测与自适应提权
+DOCKER_CMD="docker"
+if [ "$(id -u 2>/dev/null || echo 0)" -ne 0 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+        DOCKER_CMD="sudo docker"
+    fi
+fi
+
+if ! command -v docker >/dev/null 2>&1 && ! command -v sudo >/dev/null 2>&1; then
+    print_msg "${RED}[ERROR] 未检测到 Docker 环境，请先确认 Docker 是否正在运行。${NC}"
+    exit 1
+fi
+
+COMPOSE_CMD="$DOCKER_CMD compose"
+if ! $DOCKER_CMD compose version >/dev/null 2>&1; then
+    if command -v docker-compose >/dev/null 2>&1; then
+        COMPOSE_CMD="docker-compose"
+    else
+        print_msg "${RED}[ERROR] 未检测到 docker compose 核心组件。${NC}"
+        exit 1
+    fi
+fi
+
+# 1. 定位当前安装目录
+TARGET_DIR=""
+if [ -f "./docker-compose.yml" ] && grep -q 'aura-grid-pro:' ./docker-compose.yml 2>/dev/null; then
+    TARGET_DIR=$(pwd)
+else
+    EXISTING_PRO_CONTAINER=$($DOCKER_CMD ps -a -q -f name=^aura-grid-pro$ 2>/dev/null || true)
+    if [ -n "$EXISTING_PRO_CONTAINER" ]; then
+        LABEL_DIR=$($DOCKER_CMD inspect -f '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$EXISTING_PRO_CONTAINER" 2>/dev/null || true)
+        [ -n "$LABEL_DIR" ] && [ -d "$LABEL_DIR" ] && TARGET_DIR="$LABEL_DIR"
+    fi
+fi
+
+[ -n "$TARGET_DIR" ] && cd "$TARGET_DIR"
+
+# 2. 保护性备份正版硬件指纹与授权凭证
+if [ -d "./data" ]; then
+    [ -f "./data/device.id" ] && cp ./data/device.id ./data/device.id.bak 2>/dev/null || true
+    [ -f "./data/license.jwt" ] && cp ./data/license.jwt ./data/license.jwt.bak 2>/dev/null || true
+fi
+
+# 3. 极速拉取并打标
+UPDATE_SUCCESS=false
+print_msg "\n${BLUE}[*] 默认启用阿里云国内极速通道拉取最新 PRO 镜像...${NC}"
+if $DOCKER_CMD pull "$ALIYUN_IMAGE"; then
+    print_msg "${BLUE}[*] 正在本地对齐官方容器标识...${NC}"
+    $DOCKER_CMD tag "$ALIYUN_IMAGE" "$GHCR_IMAGE"
+    $DOCKER_CMD rmi "$ALIYUN_IMAGE" >/dev/null 2>&1 || true
+    UPDATE_SUCCESS=true
+else
+    print_msg "${YELLOW}[WARNING] 阿里云通道拉取未成功，正在尝试官方 GitHub 链路...${NC}"
+    if $COMPOSE_CMD pull; then
+        UPDATE_SUCCESS=true
+    fi
+fi
+
+if [ "$UPDATE_SUCCESS" != "true" ]; then
+    print_msg "${RED}[ERROR] 镜像拉取失败，请检查网络后重试。${NC}"
+    exit 1
+fi
+
+print_msg "${BLUE}[*] 正在平滑更新重启容器 (保留原网络模式、授权与全部数据)...${NC}"
+if $COMPOSE_CMD up -d; then
+    print_msg "\n${GREEN}[SUCCESS] Aura Grid Pro 已成功更新并运行最新版本！${NC}"
+    
+    print_msg "${BLUE}[*] 正在自动释放旧版本镜像空间...${NC}"
+    $DOCKER_CMD image prune -f >/dev/null 2>&1 || true
+    print_msg "${GREEN}[SUCCESS] 系统磁盘空间已自动优化清理完毕！${NC}"
+
+    IP_ADDR=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}')
+    [ -z "$IP_ADDR" ] && IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}')
+    [ -z "$IP_ADDR" ] && IP_ADDR="127.0.0.1"
+
+    print_msg "\n${GREEN}==================================================${NC}"
+    print_msg " 访问入口: ${BLUE}http://${IP_ADDR}:8125${NC}"
+    print_msg " 工作目录: ${BLUE}$(pwd)${NC}"
+    print_msg "${GREEN}==================================================${NC}\n"
+else
+    print_msg "${RED}[ERROR] 容器重启失败，请检查 docker-compose.yml。${NC}"
+    exit 1
+fi
+EOF_LOCAL_UPDATER
+    chmod +x "$TMP_UPDATER" 2>/dev/null || sudo chmod +x "$TMP_UPDATER"
+    mv -f "$TMP_UPDATER" "$TARGET_DIR/UPDATE_PRO.sh" 2>/dev/null || sudo mv -f "$TMP_UPDATER" "$TARGET_DIR/UPDATE_PRO.sh"
+    print_msg "${GREEN}[SUCCESS] 本地更新脚本已同步刷新至最新版！${NC}"
+
     IP_ADDR=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}')
     if [ -z "$IP_ADDR" ]; then
         IP_ADDR=$(hostname -I 2>/dev/null | awk '{print $1}')
