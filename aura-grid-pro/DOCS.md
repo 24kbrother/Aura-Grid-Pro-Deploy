@@ -4,7 +4,7 @@
 
 ---
 
-## 🌟 特性概览
+## 特性概览
 
 * **极速免编译**：基于 GitHub GHCR 官方预构建多架构镜像（同时支持 `linux/arm64` 与 `linux/amd64`），一键拉取秒级安装；
 * **原生 Ingress 无缝嵌入**：安装启动后自动进入 Home Assistant 左侧菜单栏，支持深层页面刷新与 WebSocket 实时状态流转；
@@ -14,10 +14,10 @@
 
 ---
 
-## 🚀 安装与使用流程
+## 安装与使用流程
 
 ### 1. 添加应用商店仓库
-1. 打开 Home Assistant 网页端，点击左侧菜单栏 **「设置 (Settings)」** ➔ **「加载项 (Add-ons)」**（最新版 HA 中为 **「应用 (Apps)」**）；
+1. 打开 Home Assistant 网页端，点击左侧菜单栏 **「设置 (Settings)」** → **「加载项 (Add-ons)」**（最新版 HA 中为 **「应用 (Apps)」**）；
 2. 点击右下角 **「应用商店 (Add-on Store)」**；
 3. 点击右上角菜单按钮 (`⋮`)，选择 **「存储库 (Repositories)」**；
 4. 输入本仓库地址并点击添加：
@@ -34,9 +34,9 @@
 
 ---
 
-## 📡 连接 Home Assistant 核心
+## 连接 Home Assistant 核心
 
-在 Aura Grid 首次设置向导或「系统设置 ➔ 核心连接」中：
+在 Aura Grid 首次设置向导或「系统设置 → 核心连接」中：
 1. **Home Assistant 地址**：填写您的 HA 内网访问地址（如 `http://192.168.x.x:8123` 或 `http://homeassistant.local:8123`）；
 2. **长期访问令牌 (Long-Lived Access Token)**：
    * 打开 HA「个人资料」页面（左下角用户头像）；
@@ -45,7 +45,7 @@
 
 ---
 
-## 🔒 数据与备份策略
+## 数据与备份策略
 
 * **数据持久化位置**：所有业务数据安全保存在 Supervisor 管理的持久化卷 `/data`：
   * 数据库：`/data/prod.db`
