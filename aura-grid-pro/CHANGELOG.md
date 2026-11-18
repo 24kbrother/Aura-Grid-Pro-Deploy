@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.20-pro (2026-11-18)
+
+### Security and reliability
+- Added independent, expiring APNs authorization for Pro notifications, with background credential renewal.
+- Lite installations remain unable to use APNs.
+- Existing iOS apps do not need a source update or device re-pairing.
+- Existing Pro installations can use the legacy authorization path until 2027-01-01 00:00 China Standard Time.
+
 ## 1.9.18-pro.1 (2026-11-15)
 
 ### Initial Home Assistant Add-on Release
