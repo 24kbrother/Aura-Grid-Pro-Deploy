@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.21-pro (2026-11-24)
+
+### Improvements & Fixes
+- Enabled `homeassistant_api: true` in add-on manifest for seamless Supervisor / Home Assistant core API communication.
+- Fixed member logout and APNs account binding cleanup in frontend client.
+- Improved SQLite journal recovery and automatic cleanup of failed backup directories on startup.
+
 ## 1.9.20-pro (2026-11-18)
 
 ### Security and reliability

@@ -1,7 +1,7 @@
 name: "Aura Grid Pro"
 description: "Aura Grid Pro 工业级全屋智能数字孪生控制中枢 (HAOS 专属内测版)"
 slug: "aura_grid_pro"
-version: "1.9.20-pro"
+version: "1.9.21-pro"
 image: "ghcr.io/24kbrother/aura-grid-pro"
 init: false
 arch:
@@ -34,8 +34,8 @@ schema:
 # Supervisor Watchdog 健康检查 (绑定原生 /health)
 watchdog: "http://[HOST]:[PORT:8500]/health"
 
-# 最小特权安全基线
-homeassistant_api: false
+# 允许访问 Home Assistant 核心 API (Supervisor 通信通道)
+homeassistant_api: true
 hassio_api: false
 
 # 环境变量显式注入
