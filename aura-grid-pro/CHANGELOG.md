@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.24-pro (2026-11-28)
+
+### Design & Usability
+- Unified Obsidian dual-palette theme (`obsidian-cobalt` and `obsidian-amber`) across Settings and top navigation banner, with an upgraded Bento Studio appearance page.
+- Extended the Settings font-scale selector (`small` / `medium` / `large`) across the Settings sidebar, subpanels, and modals without affecting the main dashboard or information sidebar.
+- Extracted the Page Size Adjuster into a backdrop-free floating card (`Teleport` outside the scaled shell) so dragging the width slider stays completely steady while previewing live canvas scaling.
+- Improved Settings sidebar visual hierarchy (larger group headings with divider lines), replaced the developer edit mode icon with a wrench, and refined toolbar typography.
+
 ## 1.9.21-pro (2026-11-24)
 
 ### Improvements & Fixes
